@@ -1,0 +1,8 @@
+.widget{position:fixed;right:15px;bottom:18px;z-index:40;display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none}
+.ring{position:relative;width:46px;height:46px;border-radius:50%;background:#ffffffb5;color:#00543e;backdrop-filter:blur(10px);box-shadow:0 3px 15px #002b3512;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg);width:100%;height:100%;fill:none;stroke:#00644318;stroke-width:2}
+.ring circle+circle{stroke:#008458;stroke-linecap:round}
+.ring span{font-size:12px;font-weight:800}.ring small{font-size:8px;margin-left:1px}
+.widget button{pointer-events:auto;width:44px;height:36px;display:grid;place-items:center;border:1px solid #00644320;border-radius:20px;background:#ffffffc7;color:#006443;cursor:pointer;backdrop-filter:blur(10px)}
+.widget button:hover{background:#e1f8e9}
+@media(max-width:600px){.widget{right:8px;bottom:10px;gap:3px}.ring{width:37px;height:37px}.widget button{width:38px;height:32px}.ring span{font-size:10px}}

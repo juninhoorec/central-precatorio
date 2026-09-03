@@ -1,0 +1,13 @@
+.hero{position:relative;isolation:isolate;min-height:285px;background:#003f36;overflow:hidden;color:white}
+.image{object-fit:cover;object-position:70% 48%;z-index:-2}
+.shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,47,41,.96) 0%,rgba(0,57,48,.87) 32%,rgba(0,45,40,.24) 70%,rgba(0,35,31,.12));z-index:-1}
+.content{width:min(1160px,calc(100% - 48px));margin:auto;padding:24px 0 32px}
+.back{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;background:#ffffff14;border:1px solid #ffffff40;border-radius:30px;padding:10px 15px}
+.back:hover{background:#ffffff28}
+.copy{margin-top:30px;max-width:600px}
+.copy>span{font-size:10px;font-weight:800;letter-spacing:2.5px;color:#ffd17d}
+.copy h2{font-size:clamp(30px,3.4vw,47px);line-height:1.1;margin:8px 0 12px;color:white}
+.copy p{display:flex;align-items:center;gap:8px;font-size:12px;margin:0;color:#e6f9ee}
+.caption{position:absolute;bottom:10px;right:16px;font-size:9px;color:#fff;background:#002e2980;padding:4px 7px;border-radius:4px}
+.compact{min-height:205px}.compact .copy{margin-top:18px}.compact .copy h2{font-size:32px}
+@media(max-width:640px){.hero{min-height:245px}.image{object-position:65% center}.content{width:calc(100% - 36px);padding-top:18px}.copy{max-width:310px;margin-top:25px}.shade{background:linear-gradient(90deg,#00392fed,#00392fb0 65%,#00392f40)}.copy p{font-size:11px}.compact{min-height:220px}}

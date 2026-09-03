@@ -1,0 +1,29 @@
+"use client";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { ArrowLeft, BadgeCheck, Bell, BriefcaseBusiness, CheckCircle2, ChevronRight, CircleDollarSign, Clock3, FileCheck2, FileText, Gauge, History, LayoutDashboard, Search, ShieldCheck, Users } from "lucide-react";
+import styles from "./workspace.module.css";
+
+const cases = [
+  {id:"CP-0826",debtor:"Estado de São Paulo",kind:"Alimentar",value:420000,stage:"Diligência",score:86,sla:"1h 34m",owner:"Indiamara",docs:4},
+  {id:"CP-0819",debtor:"Município de Campinas",kind:"Comum",value:275000,stage:"Pré-análise",score:72,sla:"3h 12m",owner:"Equipe CP",docs:2},
+  {id:"CP-0804",debtor:"INSS · TRF3",kind:"Alimentar",value:680000,stage:"Proposta",score:91,sla:"Hoje",owner:"Núcleo jurídico",docs:6},
+] as const;
+const tabs = ["Resumo","Diligência","Economia","Propostas","Auditoria"] as const;
+export default function WorkspaceDemo(){
+ const [selected,setSelected]=useState(0); const [tab,setTab]=useState<(typeof tabs)[number]>("Resumo"); const [checks,setChecks]=useState([true,true,true,true,false,false]); const active=cases[selected];
+ const completion=useMemo(()=>Math.round(checks.filter(Boolean).length/checks.length*100),[checks]);
+ return <main className={styles.app}>
+  <aside><Link href="/" className={styles.back}><ArrowLeft/> Site CP</Link><div className={styles.product}><b>CP</b><span>OPPORTUNITY OS<small>AMBIENTE SANDBOX</small></span></div><nav><a className={styles.on}><LayoutDashboard/>Visão geral</a><a><BriefcaseBusiness/>Oportunidades <i>3</i></a><a><Gauge/>Pipeline</a><a><FileText/>Documentos</a><a><Users/>Parceiros</a><a><CircleDollarSign/>Growth</a></nav><p>Simulação local. Nenhuma proposta, assinatura ou movimentação financeira é real.</p></aside>
+  <section className={styles.main}><header><div><small>WORKSPACE / OPORTUNIDADES</small><h1>Central de operações</h1></div><div><button aria-label="Pesquisar"><Search/></button><button aria-label="Notificações"><Bell/></button><span>IC</span></div></header>
+  <div className={styles.gates}><ShieldCheck/><b>Sandbox operacional</b><span>KYC, assinatura, pagamento e protocolo dependem de integrações homologadas.</span></div>
+  <div className={styles.metrics}>{[["Em análise","3"],["Valor nominal","R$ 1,37 mi"],["SLA em risco","1"],["Docs completos","33%"]].map(x=><article key={x[0]}><small>{x[0]}</small><strong>{x[1]}</strong></article>)}</div>
+  <div className={styles.workspace}><div className={styles.queue}><div className={styles.queueHead}><b>Fila priorizada</b><button>Filtros</button></div>{cases.map((c,i)=><button onClick={()=>{setSelected(i);setTab("Resumo")}} className={i===selected?styles.selected:""} key={c.id}><div><b>{c.id}</b><span>{c.stage}</span></div><strong>{c.debtor}</strong><small>{c.kind} · {c.value.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0})}</small><footer><span>Score {c.score}</span><span><Clock3/> {c.sla}</span><ChevronRight/></footer></button>)}</div>
+  <article className={styles.case}><div className={styles.caseHead}><div><small>OPORTUNIDADE {active.id}</small><h2>{active.debtor}</h2><p>{active.kind} · Titular mascarado · Fonte declarada</p></div><div><span>ETAPA ATUAL</span><b>{active.stage}</b></div></div><div className={styles.tabs}>{tabs.map(t=><button onClick={()=>setTab(t)} className={tab===t?styles.tabOn:""} key={t}>{t}</button>)}</div>
+   {tab==="Resumo"&&<div className={styles.panel}><div className={styles.facts}>{[["Valor nominal",active.value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})],["Score explicável",`${active.score}/100`],["Responsável",active.owner],["Documentação",`${completion}% completa`]].map(x=><span key={x[0]}><small>{x[0]}</small><b>{x[1]}</b></span>)}</div><h3>Próximas ações</h3><div className={styles.action}><Clock3/><div><b>Confirmar dados na fonte oficial</b><small>Vence em {active.sla} · exige validação humana</small></div></div><div className={styles.action}><FileCheck2/><div><b>Concluir checklist documental</b><small>{checks.filter(Boolean).length} de {checks.length} itens confirmados</small></div></div></div>}
+   {tab==="Diligência"&&<div className={styles.panel}><h3>Checklist de diligência</h3>{["Identificação do titular","Ofício requisitório","Trânsito em julgado","Cálculo atualizado","Certidão de cessões e penhoras","Honorários e procuração"].map((x,i)=><label className={styles.check} key={x}><input type="checkbox" checked={checks[i]} onChange={()=>setChecks(v=>v.map((c,j)=>j===i?!c:c))}/><span>{checks[i]?<CheckCircle2/>:<Clock3/>}{x}</span><small>{checks[i]?"Validado":"Pendente"}</small></label>)}</div>}
+   {tab==="Economia"&&<div className={styles.panel}><h3>Cenário vinculado</h3><div className={styles.facts}><span><small>Aquisição simulada</small><b>R$ 285.000</b></span><span><small>Custos estimados</small><b>R$ 18.500</b></span><span><small>Recebimento líquido</small><b>R$ 405.000</b></span><span><small>ROI projetado</small><b>33,4%</b></span></div><Link href="/economia-operacao" className={styles.primary}>Abrir calculadora completa</Link></div>}
+   {tab==="Propostas"&&<div className={styles.panel}><h3>Propostas indicativas</h3><div className={styles.proposal}><BadgeCheck/><div><b>R$ 285.000 · pagamento à vista</b><small>Rascunho interno · não enviado · não vinculante</small></div><button>Revisar</button></div><button className={styles.primary}>Criar novo rascunho</button></div>}
+   {tab==="Auditoria"&&<div className={styles.panel}><h3>Trilha da oportunidade</h3>{[["Hoje, 09:42","Checklist atualizado","Indiamara"],["Hoje, 09:18","Consentimento confirmado","Sistema CP"],["Ontem, 17:06","Oportunidade criada","CP Intake"]].map(x=><div className={styles.audit} key={x[0]}><History/><span><b>{x[1]}</b><small>{x[0]} · {x[2]}</small></span></div>)}</div>}
+  </article></div></section></main>
+}

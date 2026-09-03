@@ -1,0 +1,2 @@
+import{describe,expect,it}from"vitest";import{isMfaRequired}from"./auth-mail";
+describe("política MFA",()=>{it("permite modo privilegiado sem bloquear analista",()=>{expect(isMfaRequired("REQUIRED_FOR_PRIVILEGED","owner")).toBe(true);expect(isMfaRequired("REQUIRED_FOR_PRIVILEGED","analyst")).toBe(false)});it("permite desligar somente por configuração explícita",()=>expect(isMfaRequired("OFF","owner")).toBe(false))});

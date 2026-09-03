@@ -1,0 +1,1 @@
+import ResetPasswordClient from"./reset-password-client";export const metadata={title:"Redefinir senha | Central Precatórios",robots:{index:false,follow:false}};export default function Page(){return <ResetPasswordClient/>}
