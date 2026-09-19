@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
 
 # next.js
 /.next/
@@ -44,3 +46,16 @@ data/leads.json.tmp
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Controlled local CAC/TJSP source corpus
+/.local-data/
+
+
+# Controlled local CAC/TJSP source corpus
+/.local-data/
+
+
+# Controlled local CAC/TJSP source corpus
+/.local-data/
+
+

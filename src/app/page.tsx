@@ -80,6 +80,9 @@ export default function Home() {
                 <Link className="btn primary" href="/pre-analise">
                   Quero avaliar meu precatório <ArrowRight size={18} />
                 </Link>
+                <Link className="btn ghost" href="/plataforma">
+                  Conhecer plataforma <ArrowRight size={18} />
+                </Link>
                 <a className="btn ghost" href={whatsappUrl("Olá, gostaria de entender como avaliar a venda do meu precatório.")} target="_blank" rel="noopener noreferrer">Conversar com o atendimento</a>
               </div>
               <div className="trust-row">
@@ -105,7 +108,7 @@ export default function Home() {
         <section className="audiences shell">
           <Link href="/pre-analise"><UserRound/><div><small>PARA TITULARES</small><b>Entender e organizar meu caso</b></div><ArrowRight/></Link>
           <Link href="/parceiros"><BriefcaseBusiness/><div><small>PARA ESPECIALISTAS</small><b>Explorar a operação de oportunidades</b></div><ArrowRight/></Link>
-          <Link href="/plataforma"><Building2/><div><small>PARA EMPRESAS</small><b>Centralizar originação e análise</b></div><ArrowRight/></Link>
+          <Link href="/plataforma"><Building2/><div><small>PARA EMPRESAS</small><b>Captar e operar precatórios</b></div><ArrowRight/></Link>
         </section>
         <section className="clarity">
           <div className="shell clarity-grid">
@@ -313,7 +316,6 @@ export function Footer() {
             O conteúdo é informativo e não constitui aconselhamento jurídico ou
             proposta comercial.
           </p>
-          <p>Atendimento inicial: {CONTACT.initialAnalyst}</p>
           <a href={`mailto:${CONTACT.businessEmail}`}>
             {CONTACT.businessEmail}
           </a>

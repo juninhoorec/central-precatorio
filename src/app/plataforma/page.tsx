@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BarChart3, BriefcaseBusiness, ChartNoAxesCombined, CircleGauge, Files, Megaphone, Network, ShieldCheck } from "lucide-react";
 import { Footer, Header } from "../page";
+import { DEMO_LEAD } from "@/lib/demo-fixture";
 
 const modules = [
   ["CP Intake", "Disponível", "Captação consentida, origem da campanha, pré-qualificação e score inicial.", CircleGauge],
@@ -15,12 +16,45 @@ export default function Page() {
   return <><Header /><main className="platform-page">
     <section className="platform-hero shell"><div>
       <span className="kicker">CENTRAL OPERACIONAL PARA PRECATÓRIOS</span>
-      <h1>Da oportunidade ao acompanhamento, <em>sem depender de planilhas soltas.</em></h1>
-      <p>O CP está evoluindo para conectar titulares, empresas e especialistas em uma infraestrutura única de aquisição, qualificação, análise e colaboração.</p>
-      <div className="actions"><Link className="btn primary" href="/conta">Acessar minha organização <ArrowRight /></Link><Link className="btn ghost" href="/economia-operacao">Testar Deal Economics</Link></div>
+      <h1>Central de captação e operação de precatórios.</h1>
+      <p>Capte ou importe uma lista, organize os dados, valide e evidencie a origem, qualifique pelo perfil da empresa e acompanhe a oportunidade no fluxo operacional.</p>
+      <div className="actions"><Link className="btn primary" href="#demonstracao">Ver demonstração <ArrowRight /></Link><Link className="btn ghost" href="/conta">Acessar minha organização</Link></div>
     </div><div className="platform-console"><div className="console-top"><span>CP OPPORTUNITY OS</span><b>VISÃO DO PIPELINE</b></div>
       {["Entrada qualificada", "Pré-análise", "Documentação", "Proposta", "Formalização"].map((x,i)=><div className="console-line" key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x}</b><i style={{width:`${92-i*12}%`}} /></div>)}
     </div></section>
+    <section className="platform-modules shell demo-preview" id="demonstracao">
+      <div className="section-head">
+        <span className="kicker">DEMONSTRAÇÃO · DADOS SINTÉTICOS — SEM VALIDADE REAL</span>
+        <h2>Uma oportunidade. Um histórico. Um fluxo. Um próximo passo.</h2>
+        <p>Exemplo fictício: o CP organiza os campos, registra a evidência e compara o caso com critérios comerciais configurados.</p>
+      </div>
+      <div className="module-grid demo-preview-grid">
+        <article>
+          <div><BriefcaseBusiness/><span className="status">Lead sintético</span></div>
+          <h3>{DEMO_LEAD.creditor}</h3>
+          <p><b>Nº Processo DEPRE</b><br/>{DEMO_LEAD.depreNumber}</p>
+          <p><b>Processo originário · EP/ES</b><br/>{DEMO_LEAD.originProcess} · {DEMO_LEAD.epes}</p>
+          <p><b>Valor · natureza</b><br/>{DEMO_LEAD.amount.toLocaleString("pt-BR", {style:"currency",currency:"BRL"})} · {DEMO_LEAD.nature}</p>
+          <p><b>Devedora</b><br/>{DEMO_LEAD.debtor}</p>
+        </article>
+        <article>
+          <div><ShieldCheck/><span className="status">Origem visível</span></div>
+          <h3>Evidência sintética</h3>
+          <p><b>Fonte</b><br/>{DEMO_LEAD.source}</p>
+          <p><b>Referência</b><br/>{DEMO_LEAD.reference}</p>
+          <p>Trecho: DEPRE {DEMO_LEAD.depreNumber} · R$ 187.450,32 · {DEMO_LEAD.nature} · {DEMO_LEAD.debtor}.</p>
+          <p><b>{DEMO_LEAD.disclaimer}</b></p>
+        </article>
+        <article>
+          <div><ChartNoAxesCombined/><span className="status">Fluxo autenticado</span></div>
+          <h3>Da captação à operação</h3>
+          <p>CAPTAR → ORGANIZAR → VALIDAR → EVIDENCIAR → QUALIFICAR → OPERAR</p>
+          <p>Documentos, revisão jurídica humana, precificação determinística, proposta e negociação ficam no mesmo registro.</p>
+          <Link className="btn primary" href="/conta">Entrar para abrir a demo <ArrowRight size={16}/></Link>
+        </article>
+      </div>
+      <p className="demo-preview-note">A demonstração operacional exige autenticação e permanece isolada dos registros da organização.</p>
+    </section>
     <section className="platform-modules shell"><div className="section-head"><span className="kicker">ARQUITETURA MODULAR</span><h2>Valor agora. Evolução sem promessas disfarçadas.</h2><p>O status de cada recurso é público para que parceiros saibam exatamente o que já existe.</p></div><div className="module-grid">{modules.map(([title,status,text,Icon])=><article key={title}><div><Icon/><span className={status === "Roadmap" ? "status future" : "status"}>{status}</span></div><h3>{title}</h3><p>{text}</p></article>)}</div></section>
     <section className="growth-engine"><div className="shell growth-grid"><div><span className="kicker light">DIFERENCIAL CP GROWTH</span><h2>Marketing que mede qualidade, não apenas volume.</h2><p>Parceiros poderão competir por relevância por meio de cobertura, capacidade, tempo de resposta, experiência e satisfação — com critérios visíveis e sem vender prioridade escondida.</p></div><div className="growth-list"><p><BadgeCheck/>Origem e consentimento rastreáveis</p><p><BarChart3/>Custo por oportunidade e por avanço</p><p><ShieldCheck/>Regras de elegibilidade e reputação</p><p><Megaphone/>Conteúdo e campanhas cooperadas</p></div></div></section>
     <section className="principles shell"><span className="kicker">PRINCÍPIOS DO PRODUTO</span><div><article><b>01</b><h3>Fonte oficial primeiro</h3><p>O CP orienta consultas nos portais dos tribunais e registra a fonte de cada dado.</p></article><article><b>02</b><h3>Humano no controle</h3><p>Automação organiza; análise jurídica, tributária e decisão permanecem com especialistas.</p></article><article><b>03</b><h3>Consentimento e auditabilidade</h3><p>Compartilhamento, mudanças de etapa e acesso a documentos devem deixar histórico.</p></article></div></section>

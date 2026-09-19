@@ -1,6 +1,7 @@
 import { createClient, type Client } from "@libsql/client";
 import { z } from "zod";
-import { createDefaultWorkflow, operationalWorkflowSchema, transitionBlockReason } from "./operational-workflow";
+import { calculatePricing, createDefaultWorkflow, operationalWorkflowSchema, transitionBlockReason, type OperationalWorkflow } from "./operational-workflow";
+import { DEMO_DOCUMENT_DISCLAIMER, DEMO_DOCUMENT_NAME, DEMO_LEAD, DEMO_PRICING_MARKER, DEMO_REVIEW_MARKER } from "./demo-fixture";
 
 export const operationStages = [
   "Entrada",
@@ -220,9 +221,227 @@ export async function createOperation(
   return operation;
 }
 
-export async function loadDemoOperation(db:Client=client,organizationId="legacy-internal",actor="demo"){await initializeOperations(db);const existing=await db.execute({sql:"SELECT * FROM operations WHERE organization_id=? AND is_demo=1 ORDER BY created_at DESC LIMIT 1",args:[organizationId]});if(existing.rows[0])return fromRow(existing.rows[0]);const workflow=createDefaultWorkflow(480000);workflow.priority="HIGH";workflow.confidence=35;workflow.client={name:"Pessoa Credora Demonstrativa",document:"***.***.***-**",phone:"(00) 00000-0000",email:"demo@exemplo.invalid"};workflow.credit={precatoryNumber:"DEMO-CP-0001",nature:"Alimentar — dado sintético",grossAmount:480000,availableEstimate:0};workflow.nextAction={title:"Revisar dados sintéticos da triagem",dueAt:"",status:"PENDING",owner:"Analista de demonstração",reason:"Iniciar a jornada guiada do caso demonstrativo."};return createOperation({title:"DEMONSTRAÇÃO — Operação sintética",debtor:"Ente devedor fictício",tribunal:"TRIBUNAL DEMO",process:"PROCESSO-DEMO-SEM-VALIDADE",owner:"Equipe de demonstração",source:"DADOS SINTÉTICOS CP",stage:"Entrada",nominal:480000,notes:"DADOS DE DEMONSTRAÇÃO — SEM VALIDADE REAL. Não consultar como processo real.",tasks:[{id:crypto.randomUUID(),title:"Revisar dados sintéticos da triagem",due:"",done:false}],checks:[],proposals:[],workflow,isDemo:true},db,organizationId,actor)}
+const DEMO_EVIDENCE_SOURCE = DEMO_LEAD.source;
+const DEMO_EVIDENCE_REFERENCE = DEMO_LEAD.reference;
+const DEMO_DEPRE_NUMBER = DEMO_LEAD.depreNumber;
 
-export async function resetDemoOperations(db:Client=client,organizationId="legacy-internal"){await initializeOperations(db);const rows=await db.execute({sql:"SELECT id FROM operations WHERE organization_id=? AND is_demo=1",args:[organizationId]});const ids=rows.rows.map(r=>String(r.id));if(ids.length){try{for(const id of ids)await db.execute({sql:"DELETE FROM operation_documents WHERE organization_id=? AND operation_id=?",args:[organizationId,id]})}catch{/* tabela documental pode ainda não existir */}await db.execute({sql:"DELETE FROM operations WHERE organization_id=? AND is_demo=1",args:[organizationId]})}return{removed:ids.length,ids}}
+function demoEvidence(retrievedAt: string): OperationalWorkflow["evidence"][number] {
+  return {
+    id: crypto.randomUUID(),
+    source: DEMO_EVIDENCE_SOURCE,
+    sourceType: "MANUAL",
+    reference: DEMO_EVIDENCE_REFERENCE,
+    retrievedAt,
+    confidence: 100,
+    status: "COMPATÍVEL",
+    notes: `${DEMO_LEAD.disclaimer}. Fonte inteiramente sintética; não é consulta oficial nem dado do TJSP. Trecho: DEMONSTRAÇÃO CP — Nº Processo DEPRE: ${DEMO_LEAD.depreNumber} — Valor atualizado: R$ 187.450,32 — Natureza: ${DEMO_LEAD.nature} — Devedora: ${DEMO_LEAD.debtor}.`,
+  };
+}
+
+function populateDemoWorkflow(workflow: OperationalWorkflow, now: string) {
+  workflow.priority = "HIGH";
+  workflow.confidence = 100;
+  workflow.client = {
+    name: DEMO_LEAD.creditor,
+    document: "DEMO-SEM-CPF",
+    phone: "(00) 00000-0000",
+    email: "demo@exemplo.invalid",
+  };
+  workflow.credit = {
+    ...workflow.credit,
+    precatoryNumber: DEMO_LEAD.precatoryNumber,
+    numeroProcessoDEPRE: DEMO_DEPRE_NUMBER,
+    numeroProcessoDEPRENormalizado: "DEMODEPRE0001",
+    originProcessNumber: DEMO_LEAD.originProcess,
+    epesNumber: DEMO_LEAD.epes,
+    epesYear: "",
+    nature: DEMO_LEAD.nature,
+    grossAmount: DEMO_LEAD.amount,
+    availableEstimate: DEMO_LEAD.amount,
+    municipality: "Município Demonstrativo",
+    issuingCourt: "Tribunal simulado CP",
+    debtorState: "SP",
+    sourceUrl: "",
+    sourceName: DEMO_EVIDENCE_SOURCE,
+    checkedAt: now,
+    valueDate: now.slice(0, 10),
+  };
+  workflow.creditorResolution = {
+    state: "CREDOR_IDENTIFICADO",
+    confidence: "ALTA",
+    currentHolderStatus: "CURRENT_HOLDER_CONFIRMED",
+    identifiedName: DEMO_LEAD.creditor,
+    explanation: "Identidade confirmada somente na base sintética de demonstração; nenhuma fonte externa foi consultada.",
+    nextAction: "Validar identidade em fonte autorizada antes de qualquer operação real.",
+    updatedAt: now,
+  };
+  workflow.queryStatus = "MANUAL_REQUIRED";
+  workflow.evidence = [
+    ...workflow.evidence.filter((item) => item.reference !== DEMO_EVIDENCE_REFERENCE),
+    demoEvidence(now),
+  ];
+  workflow.nextAction = {
+    title: "Revisar lead demonstrativo e confirmar a fonte",
+    dueAt: "",
+    status: "PENDING",
+    owner: "Analista de demonstração",
+    reason: "Dados sintéticos para demonstrar a jornada do CP; não usar em operação real.",
+  };
+  ensureDemoWorkflowExamples(workflow, now);
+}
+
+function ensureDemoWorkflowExamples(workflow: OperationalWorkflow, now: string) {
+  if (!workflow.legalReviews.some((review) => review.observations.includes(DEMO_REVIEW_MARKER))) {
+    workflow.legalReviews.push({
+      id: crypto.randomUUID(),
+      status: "APPROVED_WITH_REMARKS",
+      reviewer: "Revisão demonstrativa",
+      requestedAt: now,
+      reviewedAt: now,
+      observations: `${DEMO_REVIEW_MARKER}. Documento demonstrativo sujeito à conferência humana. Não representa parecer nem aprovação jurídica real.`,
+      dossierVersion: 1,
+    });
+    workflow.legalStatus = "REMARKS";
+  }
+  if (!workflow.pricingScenarios.some((scenario) => scenario.assumptions.includes(DEMO_PRICING_MARKER))) {
+    const base = {
+      grossAmount: DEMO_LEAD.amount,
+      deductions: 5000,
+      encumbrances: 2500,
+      transactionCosts: 1500,
+      targetMarginPercent: 20,
+    };
+    workflow.pricingScenarios.push({
+      id: crypto.randomUUID(),
+      name: "BASE",
+      ...base,
+      ...calculatePricing(base),
+      createdAt: now,
+      assumptions: `${DEMO_PRICING_MARKER}. Premissas fictícias para demonstrar o cálculo determinístico; não é oferta vinculante.`,
+    });
+    if (workflow.commercialStatus === "NOT_STARTED") workflow.commercialStatus = "PRICING";
+  }
+}
+
+function syntheticDemoPdfBytes() {
+  const lines = [
+    "DOCUMENTO DE DEMONSTRACAO - SEM VALIDADE REAL",
+    `Credor: ${DEMO_LEAD.creditor.replace(" — ", " - ")}`,
+    `DEPRE ${DEMO_LEAD.depreNumber}`,
+    `Processo originario: ${DEMO_LEAD.originProcess}`,
+    `EP/ES: ${DEMO_LEAD.epes}`,
+    `PRC ${DEMO_LEAD.precatoryNumber}`,
+    "Valor atualizado: R$ 187.450,32",
+    `Natureza: ${DEMO_LEAD.nature}`,
+    `Devedora: ${DEMO_LEAD.debtor.replace("São", "Sao")}`,
+  ];
+  const commands = lines.map((line, index) => {
+    const escaped = line.replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
+    return `BT /F1 ${index === 0 ? 13 : 10} Tf 50 ${760 - index * 22} Td (${escaped}) Tj ET`;
+  }).join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    `<< /Length ${Buffer.byteLength(commands, "latin1")} >>\nstream\n${commands}\nendstream`,
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const [index, object] of objects.entries()) {
+    offsets.push(Buffer.byteLength(pdf, "latin1"));
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  }
+  const xref = Buffer.byteLength(pdf, "latin1");
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return Buffer.from(pdf, "latin1");
+}
+
+async function ensureDemoDocument(operation: Operation, db: Client, organizationId: string, actor: string) {
+  const [{ DatabaseStorageAdapter }, { analyzePdf }] = await Promise.all([
+    import("./document-storage"),
+    import("./pdf-analysis"),
+  ]);
+  const storage = new DatabaseStorageAdapter(db);
+  const documents = await storage.list(operation.id, organizationId);
+  let document = documents.find((item) => item.name === DEMO_DOCUMENT_NAME);
+  if (!document) {
+    document = await storage.upload({
+      operationId: operation.id,
+      organizationId,
+      name: DEMO_DOCUMENT_NAME,
+      bytes: syntheticDemoPdfBytes(),
+      createdBy: actor,
+    });
+    document = (await storage.updateReview(document.id, organizationId, {
+      status: "QUARANTINED",
+      category: "PRECATORIO",
+      reviewerNotes: `${DEMO_DOCUMENT_DISCLAIMER}. Arquivo inteiramente sintético, vinculado apenas à operação demonstrativa.`,
+      retentionUntil: "",
+    })) || document;
+  }
+  await analyzePdf(document.id, organizationId, db, storage);
+}
+
+export async function loadDemoOperation(db:Client=client,organizationId="legacy-internal",actor="demo") {
+  await initializeOperations(db);
+  const existing = await db.execute({
+    sql: "SELECT * FROM operations WHERE organization_id=? AND is_demo=1 ORDER BY created_at DESC LIMIT 1",
+    args: [organizationId],
+  });
+  const now = new Date().toISOString();
+  if (existing.rows[0]) {
+    const operation = fromRow(existing.rows[0]);
+    const workflow = structuredClone(operation.workflow);
+    const beforeWorkflow = JSON.stringify(workflow);
+    const missingLeadData = workflow.credit.numeroProcessoDEPRE !== DEMO_DEPRE_NUMBER || !workflow.evidence.some((item) => item.reference === DEMO_EVIDENCE_REFERENCE);
+    if (missingLeadData) populateDemoWorkflow(workflow, now);
+    ensureDemoWorkflowExamples(workflow, now);
+    let current = operation;
+    if (JSON.stringify(workflow) !== beforeWorkflow || operation.nominal !== DEMO_LEAD.amount) {
+      const result = await updateOperation({
+        ...operation,
+        ...(missingLeadData ? {
+          title: "DEMONSTRAÇÃO — João da Silva",
+          debtor: DEMO_LEAD.debtor,
+          tribunal: "TJSP — perfil simulado, fonte sintética",
+          process: DEMO_LEAD.originProcess,
+          source: DEMO_EVIDENCE_SOURCE,
+          nominal: DEMO_LEAD.amount,
+          notes: `${DEMO_LEAD.disclaimer}. Nenhuma informação veio de credor ou fonte oficial.`,
+        } : {}),
+        workflow,
+        isDemo: true,
+      }, db, organizationId, actor);
+      if (result.status === "not_found") throw new Error("DEMO_OPERATION_NOT_FOUND");
+      current = result.operation;
+    }
+    await ensureDemoDocument(current, db, organizationId, actor);
+    return current;
+  }
+  const workflow = createDefaultWorkflow(DEMO_LEAD.amount);
+  populateDemoWorkflow(workflow, now);
+  const operation = await createOperation({
+    title: "DEMONSTRAÇÃO — João da Silva",
+    debtor: DEMO_LEAD.debtor,
+    tribunal: "TJSP — perfil simulado, fonte sintética",
+    process: DEMO_LEAD.originProcess,
+    owner: "Equipe de demonstração",
+    source: DEMO_EVIDENCE_SOURCE,
+    stage: "Entrada",
+    nominal: DEMO_LEAD.amount,
+    notes: `${DEMO_LEAD.disclaimer}. Nenhuma informação veio de credor ou fonte oficial.`,
+    tasks: [{ id: crypto.randomUUID(), title: "Revisar lead demonstrativo e confirmar a fonte", due: "", done: false }],
+    checks: [],
+    proposals: [],
+    workflow,
+    isDemo: true,
+  }, db, organizationId, actor);
+  await ensureDemoDocument(operation, db, organizationId, actor);
+  return operation;
+}
+
+export async function resetDemoOperations(db:Client=client,organizationId="legacy-internal"){await initializeOperations(db);const rows=await db.execute({sql:"SELECT id FROM operations WHERE organization_id=? AND is_demo=1",args:[organizationId]});const ids=rows.rows.map(r=>String(r.id));if(ids.length){for(const id of ids){await db.execute({sql:"DELETE FROM document_analyses WHERE organization_id=? AND operation_id=?",args:[organizationId,id]}).catch(()=>{});await db.execute({sql:"DELETE FROM operation_documents WHERE organization_id=? AND operation_id=?",args:[organizationId,id]}).catch(()=>{})}await db.execute({sql:"DELETE FROM operations WHERE organization_id=? AND is_demo=1",args:[organizationId]})}return{removed:ids.length,ids}}
 
 const labels: Record<Exclude<keyof Operation, "id" | "version" | "history">, string> = {
   title: "título",

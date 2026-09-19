@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local-only research/validation artifacts should not block the shipped product.
+    ".local-data/**",
+    "scripts/cp-real-corpus-ingest.mts",
   ]),
 ]);
 

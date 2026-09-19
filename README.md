@@ -35,7 +35,10 @@ Configurar banco remoto, Better Auth, e-mail/MFA, storage privado com antivírus
 npm test
 npm run lint
 npm run build
+npm run test:e2e
 ```
+
+O E2E do Lead Center usa Chromium e inicializa banco local isolado. Configure o navegador com `npx playwright install chromium`; detalhes e limites em `docs/CP-2.2-LEAD-CENTER.md`.
 
 ## CP 2.1 — demonstração
 

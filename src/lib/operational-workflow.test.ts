@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePricing, canTransition, createDefaultWorkflow, nextActionFor } from "./operational-workflow";
+import { calculatePricing, canTransition, createDefaultWorkflow, nextActionFor, summarizeEvidence } from "./operational-workflow";
 
 describe("workflow operacional", () => {
   it("bloqueia transições arbitrárias", () => {
@@ -15,5 +15,28 @@ describe("workflow operacional", () => {
     const workflow = createDefaultWorkflow();
     workflow.validations.push({ id: crypto.randomUUID(), check: "CPF", severity: "CRITICAL", status: "FAILED", explanation: "CPF diverge do documento." });
     expect(nextActionFor(workflow)).toBe("Resolver divergência crítica");
+  });
+  it("resume a evidência do fluxo para conferência analítica", () => {
+    const workflow = createDefaultWorkflow();
+    workflow.evidence.push({
+      id: crypto.randomUUID(),
+      source: "TJSP / DEPRE",
+      sourceType: "OFFICIAL",
+      reference: "https://www.tjsp.jus.br/precatorios/123",
+      retrievedAt: new Date().toISOString(),
+      confidence: 88,
+      status: "CONFIRMADO",
+      notes: "Registro confirmado por fonte oficial.",
+    });
+    expect(summarizeEvidence(workflow.evidence)).toEqual([
+      {
+        source: "TJSP / DEPRE",
+        sourceType: "OFFICIAL",
+        reference: "https://www.tjsp.jus.br/precatorios/123",
+        confidence: 88,
+        status: "CONFIRMADO",
+        summary: "TJSP / DEPRE · https://www.tjsp.jus.br/precatorios/123 · 88% · CONFIRMADO",
+      },
+    ]);
   });
 });

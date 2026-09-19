@@ -1,0 +1,12 @@
+import {describe,expect,it} from "vitest";
+import {compareBenchmark,benchmarkKey} from "./capture-benchmark";
+import {createDefaultWorkflow} from "./operational-workflow";
+import type {Operation} from "./operations";
+import type {TjspLeadRow} from "./tjsp-import";
+const row=(creditNumber:string,amount:number|null,extra:Partial<TjspLeadRow>={}):TjspLeadRow=>({creditNumber,processNumber:`process-${creditNumber}`,creditor:"Credor exemplo",debtor:"Município de Teste",municipality:"São Paulo",amount,valueDate:"",type:"PRECATORY",court:"TJSP",sourceUrl:"https://example.invalid",...extra});
+const operation=(creditNumber:string,nominal:number):Operation=>{const workflow=createDefaultWorkflow(nominal);workflow.credit.precatoryNumber=creditNumber;workflow.client.name="Credor exemplo";return{id:`op-${creditNumber}`,version:1,title:creditNumber,debtor:"Município de Teste",tribunal:"TJSP",process:`process-${creditNumber}`,owner:"",source:"test",stage:"Entrada",nominal,notes:"",tasks:[],checks:[],proposals:[],history:[],workflow,isDemo:false}};
+describe("comparação de benchmark de captação",()=>{
+ it("matches deterministic identifiers and reports factual differences",()=>{const report=compareBenchmark([row("PRC-1",120000),row("PRC-2",50000),row("PRC-2",51000),row("",null,{processNumber:"",creditor:""})],[operation("PRC-1",110000),operation("PRC-3",200000)]);expect(report.matches).toBe(1);expect(report.conflicts).toBe(1);expect(report.duplicates).toBe(1);expect(report.incomplete).toBe(1);expect(report.onlyExternal).toBe(1);expect(report.onlyCp).toBe(1)});
+ it("does not identify solely by creditor or amount",()=>{expect(benchmarkKey({creditNumber:"",processNumber:"",debtor:"",creditor:"Mesmo nome",court:"TJSP"})).toBe("")});
+ it("matches by explicit Nº Processo DEPRE before generic process fields",()=>{const depre="0032722-57.2014.8.26.0500",workflow=createDefaultWorkflow(218088.9);workflow.credit.numeroProcessoDEPRE=depre;workflow.credit.numeroProcessoDEPRENormalizado="00327225720148260500";workflow.credit.epesNumber="5910";workflow.credit.epesYear="2014";const op:Operation={...operation("",218088.9),workflow,process:"0008831-10.2002.8.26.0053"},external=row("",218088.9,{numeroProcessoDEPRE:depre,epesNumber:"5910",epesYear:"2014",originProcessNumber:"0008831-10.2002.8.26.0053"}),report=compareBenchmark([external],[op]);expect(benchmarkKey(external)).toBe(`d:tjsp:${depre.replace(/\W/g,"")}`);expect(report.matches).toBe(1);expect(report.matchesByDEPRE).toBe(1)});
+});

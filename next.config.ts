@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pdfjs-dist"],
   async headers() {
     const productionOnly =
       process.env.NODE_ENV === "production"
