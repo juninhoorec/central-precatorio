@@ -313,7 +313,6 @@ export function Footer() {
             O conteúdo é informativo e não constitui aconselhamento jurídico ou
             proposta comercial.
           </p>
-          <p>Atendimento inicial: {CONTACT.initialAnalyst}</p>
           <a href={`mailto:${CONTACT.businessEmail}`}>
             {CONTACT.businessEmail}
           </a>
