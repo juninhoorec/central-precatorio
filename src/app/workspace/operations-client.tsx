@@ -21,11 +21,13 @@ import DataJudSearch from "./datajud-search";
 import OperationalCase from "./operational-case";
 import {
   createDefaultWorkflow,
+  initialInventoryOrigin,
   type OperationalWorkflow,
 } from "@/lib/operational-workflow";
 import AuditTrail from "./audit-trail";
 import SourceMonitorPanel from "./source-monitor-panel";
 import BenchmarkPanel from "./benchmark-panel";
+import AutonomousPanel from "./autonomous-panel";
 import {
   defaultAcquisitionProfile,
   evaluateLead,
@@ -491,8 +493,8 @@ function LeadDashboard({
       ]),
     ),
     leads = precatorios
-      .filter((item) => demoMode || item.workflow.stage === "NEW")
-      .filter((item) => type === "ALL" || item.nominal >= minimum)
+      .filter((item) => demoMode || item.workflow.stage === "NEW" || isInitial73(item))
+      .filter((item) => isInitial73(item) || type === "ALL" || item.nominal >= minimum)
       .filter(
         (item) =>
           !place ||
@@ -504,8 +506,13 @@ function LeadDashboard({
       )
       .toSorted(
         (a, b) =>
+          Number(isInitial73(b)) - Number(isInitial73(a)) ||
           (qualified.get(b.id)?.score || 0) - (qualified.get(a.id)?.score || 0),
-      );
+      ),
+    initialStockCount = precatorios.filter(isInitial73).length,
+    initialStockPendingAi = precatorios.filter(
+      (item) => isInitial73(item) && item.workflow.inventory.aiValidation === "PENDING",
+    ).length;
   const highQuality = [...qualified.values()].filter(
       (x) => x.status === "QUALIFICADO",
     ).length,
@@ -521,19 +528,19 @@ function LeadDashboard({
     <div className={demoMode ? `${styles.leadDashboard} ${styles.demoLeadDashboard}` : styles.leadDashboard}>
       {!demoMode && <SourceMonitorPanel />}
       {!demoMode && <BenchmarkPanel />}
-      <div className={styles.demoMode} role="group" aria-label="Base de leads">
-        <button aria-pressed={!demoMode} onClick={() => onDemoModeChange(false)}>Leads de produção</button>
-        <button aria-pressed={demoMode} onClick={() => onDemoModeChange(true)}>Demonstração</button>
-        {demoMode && <div className={styles.demoBanner}>DADOS DE DEMONSTRAÇÃO — SEM VALIDADE REAL · BASE SEPARADA DOS LEADS DE PRODUÇÃO</div>}
+      <div className={styles.demoMode} role="group" aria-label="Base de oportunidades">
+        <button aria-pressed={!demoMode} onClick={() => onDemoModeChange(false)}>Base operacional</button>
+        <button aria-pressed={demoMode} onClick={() => onDemoModeChange(true)}>Exemplos sintéticos</button>
+        {demoMode && <div className={styles.demoBanner}>DADOS SINTÉTICOS — SEM VALIDADE REAL · SEPARADOS DA BASE OPERACIONAL</div>}
       </div>
       <div className={styles.leadIntro}>
         <div>
           <span>LEAD CENTER · PERFIL {profile.version}</span>
-          <h2>{demoMode ? "Lead captado · demonstração" : "Leads qualificados"}</h2>
+          <h2>{demoMode ? "Lead captado · demonstração" : "Oportunidades disponíveis"}</h2>
           <p>
             {demoMode
               ? "Veja como o CP organiza a origem, evidencia os dados, qualifica o lead e o transforma em operação."
-              : "Encontre candidatos, confira evidências e avance somente os que aderirem ao perfil comercial."}
+              : `${initialStockCount} casos da base inicial disponíveis; validação IA independente.`}
           </p>
         </div>
         <button onClick={onCreate}>
@@ -581,6 +588,14 @@ function LeadDashboard({
         <article>
           <small>Possíveis duplicados</small>
           <b>{duplicates.size}</b>
+        </article>
+        <article>
+          <small>Disponíveis · base inicial</small>
+          <b>{initialStockCount}</b>
+        </article>
+        <article>
+          <small>Validação IA pendente · base inicial</small>
+          <b>{initialStockPendingAi}</b>
         </article>
       </div>
       <details className={styles.captureBox}>
@@ -1110,6 +1125,9 @@ function LeadDashboard({
                 <th>Identificadores</th>
                 <th>Devedor</th>
                 <th>Valor atualizado</th>
+                <th>Status</th>
+                <th>Disponibilidade</th>
+                <th>Validação IA</th>
                 <th>Qualificação</th>
                 <th>Contato</th>
                 <th></th>
@@ -1124,6 +1142,7 @@ function LeadDashboard({
                     <td>
                       <b>{item.workflow.client.name || "Credor a confirmar"}</b>
                       {demoMode && <small>DADOS DE DEMONSTRAÇÃO — SEM VALIDADE REAL</small>}
+                      {isInitial73(item) && <small>{initialInventoryOrigin}</small>}
                       <small>
                         {item.workflow.credit.sourceName || "Fonte não informada"}
                       </small>
@@ -1154,11 +1173,38 @@ function LeadDashboard({
                       <small>{item.tribunal || "Tribunal pendente"}</small>
                     </td>
                     <td>
-                      <b>{money(item.nominal)}</b>
+                      <b>{item.nominal > 0 ? money(item.nominal) : "Não informado"}</b>
                       <small>
-                        {item.workflow.credit.valueDate
+                        {item.nominal <= 0
+                          ? "Valor ausente na base de origem"
+                          : item.workflow.credit.valueDate
                           ? `data-base ${item.workflow.credit.valueDate}`
                           : "valor listado · conferir data-base"}
+                      </small>
+                    </td>
+                    <td>{item.stage}</td>
+                    <td>
+                      <span className={styles.stockPill}>
+                        {item.workflow.inventory.availability === "AVAILABLE"
+                          ? "DISPONÍVEL"
+                          : item.workflow.inventory.availability === "UNAVAILABLE"
+                            ? "INDISPONÍVEL"
+                            : "EM REVISÃO"}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.aiValidationPill}>
+                        {aiValidationLabels[item.workflow.inventory.aiValidation]}
+                      </span>
+                      <small>
+                        Confiança: {item.workflow.inventory.aiConfidence === null
+                          ? "não avaliada"
+                          : `${item.workflow.inventory.aiConfidence}%`}
+                      </small>
+                      <small>
+                        {item.workflow.inventory.divergenceAlert
+                          ? <span className={styles.divergenceAlert}>ALERTA: {item.workflow.inventory.divergenceAlert}</span>
+                          : "Nenhum alerta registrado"}
                       </small>
                     </td>
                     <td>
@@ -1253,6 +1299,14 @@ const tabs = [
 ];
 const money = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const isInitial73 = (item: Operation) => item.workflow.inventory.origin === "INITIAL_73";
+const aiValidationLabels = {
+  PENDING: "PENDENTE",
+  RECONFIRMED: "RECONFIRMADO",
+  UPDATED: "ATUALIZADO",
+  DIVERGENCE: "DIVERGÊNCIA",
+  NOT_FOUND: "NÃO LOCALIZADO",
+} as const;
 function LeadQualificationEditor({
   operation,
   onChange,
@@ -1731,6 +1785,7 @@ export default function OperationsClient() {
         </div>
         <nav>
           {[
+            "Captação Autônoma",
             "Captação",
             "Operações",
             "Pipeline",
@@ -1756,7 +1811,9 @@ export default function OperationsClient() {
             <small>UMA OPORTUNIDADE · UM HISTÓRICO · UM PRÓXIMO PASSO</small>
             <h1>{view}</h1>
             <p>
-              {view === "Captação"
+              {view === "Captação Autônoma"
+                ? "Motor de aquisição e qualificação contínua de precatórios paulistas."
+                : view === "Captação"
                 ? "Encontre e priorize credores de precatórios paulistas com evidências rastreáveis."
                 : "Cada oportunidade com contexto, evidências e ação prioritária."}
             </p>
@@ -1812,7 +1869,11 @@ export default function OperationsClient() {
             <strong>{dashboardItems.reduce((s, o) => s + o.workflow.negotiations.length, 0)}</strong>
           </article>
         </div>
-        {view === "Captação" ? (
+        {view === "Captação Autônoma" ? (
+          <section className={styles.card}>
+            <AutonomousPanel />
+          </section>
+        ) : view === "Captação" ? (
           <section className={styles.card}>
             <LeadDashboard
               items={items}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveCreditor, type CreditorCandidateInput } from "./creditor-resolution";
+import { discoverBeneficiaryContacts, resolveCreditor, resolveOfficialDocuments, type CreditorCandidateInput } from "./creditor-resolution";
 
 const identifiers = {
   numeroProcessoDEPRE: "0032722-57.2014.8.26.0500",
@@ -83,5 +83,70 @@ describe("deterministic creditor resolution", () => {
   it("preserves unavailable and CAPTCHA-assisted source states", () => {
     expect(resolveCreditor(input({ queryState: "ACCESS_FAILED", resultCount: 0, candidates: [] })).state).toBe("FONTE_INDISPONÍVEL");
     expect(resolveCreditor(input({ queryState: "REQUIRES_ASSISTED_ACTION", resultCount: 0, candidates: [] })).state).toBe("REVISÃO_HUMANA");
+  });
+
+  it("resolves two distinct DEPRE official documents and de-dupes repeated URLs", () => {
+    const result = resolveOfficialDocuments({
+      numeroProcessoDEPRE: identifiers.numeroProcessoDEPRE,
+      debtor: identifiers.debtor,
+      tribunal: "TJSP",
+      documents: [
+        {
+          documentType: "Ofício Requisitório-Precatório Expedido",
+          documentDate: "2024-01-15",
+          numeroProcessoDEPRE: identifiers.numeroProcessoDEPRE,
+          officialSource: "TJSP / e-SAJ",
+          consultationUrl: "https://www.tjsp.jus.br/Precatorios/ConsultaRequisitorios",
+          documentUrl: "https://www.tjsp.jus.br/Precatorios/Documentos/oficio-1.pdf",
+          accessStatus: "PUBLIC",
+          sourceReference: "oficio-1",
+          evidenceId: "doc-1",
+          confidence: 0.96,
+        },
+        {
+          documentType: "DEPRE - Ofício de Processamento Expedido",
+          documentDate: "2024-01-20",
+          numeroProcessoDEPRE: identifiers.numeroProcessoDEPRE,
+          officialSource: "TJSP / DEPRE",
+          consultationUrl: "https://www.tjsp.jus.br/Precatorios/ConsultaRequisitorios",
+          documentUrl: "https://www.tjsp.jus.br/Precatorios/Documentos/oficio-1.pdf",
+          accessStatus: "PUBLIC",
+          sourceReference: "oficio-1-copy",
+          evidenceId: "doc-1-duplicate",
+          confidence: 0.96,
+        },
+        {
+          documentType: "Ofício - Processamento - DEPRE",
+          documentDate: "2024-01-21",
+          numeroProcessoDEPRE: identifiers.numeroProcessoDEPRE,
+          officialSource: "TJSP / DEPRE",
+          consultationUrl: "https://www.tjsp.jus.br/Precatorios/ConsultaRequisitorios",
+          documentUrl: "https://www.tjsp.jus.br/Precatorios/Documentos/oficio-2.pdf",
+          accessStatus: "PUBLIC",
+          sourceReference: "oficio-2",
+          evidenceId: "doc-2",
+          confidence: 0.97,
+        },
+      ],
+    });
+
+    expect(result.documentationOficios.status).toBe("2/2");
+    expect(result.documentationOficios.documents).toHaveLength(2);
+    expect(result.officialDocumentUrls).toHaveLength(2);
+  });
+
+  it("keeps attorney contacts separate from the creditor and allows beneficiary-only contact resolution", () => {
+    const result = discoverBeneficiaryContacts({
+      creditorName: "João da Silva",
+      contactCandidates: [
+        { type: "PHONE", value: "(11) 99999-9999", normalizedValue: "11999999999", source: "https://empresa.com.br/contato", sourceUrl: "https://empresa.com.br/contato", confidence: 0.93, publicSource: true, belongsTo: "CREDOR" },
+        { type: "PHONE", value: "(11) 98888-8888", normalizedValue: "11988888888", source: "https://advogado.com.br/contato", sourceUrl: "https://advogado.com.br/contato", confidence: 0.9, publicSource: true, belongsTo: "ADVOGADO" },
+      ],
+    });
+
+    expect(result.contacts.beneficiary).toHaveLength(1);
+    expect(result.contacts.relatedProfessional).toHaveLength(1);
+    expect(result.contacts.relatedProfessional[0].belongsTo).toBe("ADVOGADO");
+    expect(result.contactSummary).toContain("João da Silva");
   });
 });

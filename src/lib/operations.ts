@@ -1,6 +1,6 @@
 import { createClient, type Client } from "@libsql/client";
 import { z } from "zod";
-import { calculatePricing, createDefaultWorkflow, operationalWorkflowSchema, transitionBlockReason, type OperationalWorkflow } from "./operational-workflow";
+import { calculatePricing, createDefaultWorkflow, inventoryMetadataForSources, operationalWorkflowSchema, transitionBlockReason, type OperationalWorkflow } from "./operational-workflow";
 import { DEMO_DOCUMENT_DISCLAIMER, DEMO_DOCUMENT_NAME, DEMO_LEAD, DEMO_PRICING_MARKER, DEMO_REVIEW_MARKER } from "./demo-fixture";
 
 export const operationStages = [
@@ -141,7 +141,16 @@ export async function initializeOperations(db: Client = client) {
 }
 
 function workflowFromRow(row: Record<string, unknown>) {
-  try { return operationalWorkflowSchema.parse(JSON.parse(String(row.workflow || "{}"))); }
+  try {
+    const storedWorkflow = JSON.parse(String(row.workflow || "{}")) as Record<string, unknown>;
+    const workflow = operationalWorkflowSchema.parse(storedWorkflow);
+    workflow.inventory = inventoryMetadataForSources([
+      String(row.source || ""),
+      workflow.credit.sourceName,
+      ...workflow.evidence.map((item) => item.source),
+    ], storedWorkflow.inventory);
+    return workflow;
+  }
   catch { return createDefaultWorkflow(Number(row.nominal) || 0); }
 }
 

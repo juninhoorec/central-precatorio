@@ -54,9 +54,37 @@ export const monitoringEventSchema = z.object({
   description: z.string().trim().max(3000), importance: z.enum(["LOW", "MEDIUM", "HIGH"]), reviewed: z.boolean(), linkedTaskId:z.string().uuid().optional(),
 }).strict();
 
+export const initialInventoryOrigin = "BASE INICIAL — 73 DEPREs";
+const initialInventorySource = "TJSP/DEPRE · Pacote 73";
+const initialInventoryFile = "CP_pacote_completo_73_DEPREs.xlsx";
+const inventoryMetadataSchema = z.object({
+  origin: z.enum(["INITIAL_73", "OTHER"]).default("OTHER"),
+  availability: z.enum(["AVAILABLE", "UNAVAILABLE", "UNDER_REVIEW"]).default("UNDER_REVIEW"),
+  aiValidation: z.enum(["PENDING", "RECONFIRMED", "UPDATED", "DIVERGENCE", "NOT_FOUND"]).default("PENDING"),
+  aiConfidence: z.number().min(0).max(100).nullable().default(null),
+  divergenceAlert: z.string().trim().max(1000).default(""),
+}).strict();
+const defaultInventoryMetadata = {
+  origin: "OTHER",
+  availability: "UNDER_REVIEW",
+  aiValidation: "PENDING",
+  aiConfidence: null,
+  divergenceAlert: "",
+} as const;
+
+export function inventoryMetadataForSources(sources: readonly string[], stored?: unknown) {
+  const isInitial73 = sources.some((source) => source === initialInventorySource || source === initialInventoryFile);
+  const metadata = stored === undefined
+    ? inventoryMetadataSchema.parse({})
+    : inventoryMetadataSchema.parse(stored);
+  if (!isInitial73) return metadata;
+  return { ...metadata, origin: "INITIAL_73" as const, availability: "AVAILABLE" as const };
+}
+
 export const officeSlotSchema=z.object({id:z.string().uuid(),label:z.string().trim().min(1).max(120),category:z.string().trim().max(80),requiredForQualification:z.boolean(),status:z.enum(["PENDENTE","RECEBIDO","EM_CONFERENCIA","VALIDADO_PARA_TRIAGEM","DIVERGENTE","NAO_APLICAVEL","REVISAO_HUMANA"]),documentId:z.string().uuid().or(z.literal("")),source:z.string().trim().max(500),receivedAt:z.union([z.literal(""),z.iso.datetime()]),reviewedAt:z.union([z.literal(""),z.iso.datetime()]),reviewer:z.string().trim().max(160),discrepancyStatus:z.enum(["NONE","PENDING","RESOLVED"]).default("NONE"),notes:z.string().trim().max(2000)}).strict();
 
 export const operationalWorkflowSchema = z.object({
+  inventory: inventoryMetadataSchema.default(defaultInventoryMetadata),
   stage: z.enum(workflowStages), priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]), confidence: z.number().min(0).max(100),
   client: z.object({ name: short, document: z.string().trim().max(24), phone: z.string().trim().max(32), email: z.string().trim().max(254) }).strict(),
   credit: z.object({ precatoryNumber: z.string().trim().max(120), numeroProcessoDEPRE:z.string().trim().max(120).default(""), numeroProcessoDEPRENormalizado:z.string().trim().max(120).default(""), paymentOrderNumber:z.string().trim().max(120).default(""), nature: short, grossAmount: optionalMoney, availableEstimate: optionalMoney, creditType:z.enum(["PRECATORY","RPV"]).default("PRECATORY"), municipality:z.string().trim().max(120).default(""), issuingCourt:z.string().trim().max(120).default(""), debtorState:z.string().trim().max(60).default("SP"), sourceUrl:z.string().trim().max(1000).default(""), sourceName:z.string().trim().max(160).default(""), checkedAt:z.union([z.literal(""),z.iso.datetime()]).default(""), valueDate:z.union([z.literal(""),z.iso.date()]).default(""), legalRepName:z.string().trim().max(240).default(""), legalRepOab:z.string().trim().max(40).default(""), contactSource:z.string().trim().max(500).default(""), contactCheckedAt:z.union([z.literal(""),z.iso.datetime()]).default(""), precatoryYear:z.string().trim().max(4).default(""), epesNumber:z.string().trim().max(120).default(""), epesYear:z.string().trim().max(4).default(""), principalRequisitionOfficeNumber:z.string().trim().max(120).default(""), requisitionOfficeDate:z.union([z.literal(""),z.iso.date()]).default(""), originProcessNumber:z.string().trim().max(100).default(""), requisitionProcessNumber:z.string().trim().max(100).default(""), chronologicalOrderNumber:z.string().trim().max(120).default(""), depreReference:z.string().trim().max(160).default(""), depreReferenceSource:z.string().trim().max(500).default(""), qualityOffices:z.array(officeSlotSchema).max(10).default([]), acquisitionProfileVersion:z.string().trim().max(40).default("1.0") }).strict(),
@@ -76,6 +104,7 @@ export type OperationalWorkflow = z.infer<typeof operationalWorkflowSchema>;
 
 export function createDefaultWorkflow(nominal = 0): OperationalWorkflow {
   return {
+    inventory: inventoryMetadataSchema.parse({}),
     stage: "NEW", priority: "MEDIUM", confidence: 0,
     client: { name: "", document: "", phone: "", email: "" },
     credit: { precatoryNumber: "", numeroProcessoDEPRE:"", numeroProcessoDEPRENormalizado:"", paymentOrderNumber:"", nature: "", grossAmount: nominal, availableEstimate: 0, creditType:"PRECATORY", municipality:"", issuingCourt:"", debtorState:"SP", sourceUrl:"", sourceName:"", checkedAt:"", valueDate:"", legalRepName:"", legalRepOab:"", contactSource:"", contactCheckedAt:"",precatoryYear:"",epesNumber:"",epesYear:"",principalRequisitionOfficeNumber:"",requisitionOfficeDate:"",originProcessNumber:"",requisitionProcessNumber:"",chronologicalOrderNumber:"",depreReference:"",depreReferenceSource:"",qualityOffices:[{id:crypto.randomUUID(),label:"Ofício 1",category:"OFICIO_EMPRESA",requiredForQualification:true,status:"PENDENTE",documentId:"",source:"",receivedAt:"",reviewedAt:"",reviewer:"",discrepancyStatus:"NONE",notes:""},{id:crypto.randomUUID(),label:"Ofício 2",category:"OFICIO_EMPRESA",requiredForQualification:true,status:"PENDENTE",documentId:"",source:"",receivedAt:"",reviewedAt:"",reviewer:"",discrepancyStatus:"NONE",notes:""}],acquisitionProfileVersion:"1.0" },

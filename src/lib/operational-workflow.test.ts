@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePricing, canTransition, createDefaultWorkflow, nextActionFor, summarizeEvidence } from "./operational-workflow";
+import { calculatePricing, canTransition, createDefaultWorkflow, initialInventoryOrigin, inventoryMetadataForSources, nextActionFor, summarizeEvidence } from "./operational-workflow";
 
 describe("workflow operacional", () => {
   it("bloqueia transições arbitrárias", () => {
@@ -38,5 +38,36 @@ describe("workflow operacional", () => {
         summary: "TJSP / DEPRE · https://www.tjsp.jus.br/precatorios/123 · 88% · CONFIRMADO",
       },
     ]);
+  });
+  it("marca a base importada dos 73 como disponível com validação IA pendente", () => {
+    expect(inventoryMetadataForSources([
+      "TJSP/DEPRE · Pacote 73",
+      "CP_pacote_completo_73_DEPREs.xlsx",
+    ])).toEqual({
+      origin: "INITIAL_73",
+      availability: "AVAILABLE",
+      aiValidation: "PENDING",
+      aiConfidence: null,
+      divergenceAlert: "",
+    });
+    expect(initialInventoryOrigin).toBe("BASE INICIAL — 73 DEPREs");
+  });
+  it("não classifica outras origens como parte do estoque inicial", () => {
+    expect(inventoryMetadataForSources(["TJSP · Lista Geral"]).availability).toBe("UNDER_REVIEW");
+  });
+  it("preserva o resultado e a confiança da IA em leituras futuras", () => {
+    expect(inventoryMetadataForSources(["TJSP/DEPRE · Pacote 73"], {
+      origin: "INITIAL_73",
+      availability: "UNDER_REVIEW",
+      aiValidation: "DIVERGENCE",
+      aiConfidence: 72,
+      divergenceAlert: "Credor diferente na fonte consultada",
+    })).toEqual({
+      origin: "INITIAL_73",
+      availability: "AVAILABLE",
+      aiValidation: "DIVERGENCE",
+      aiConfidence: 72,
+      divergenceAlert: "Credor diferente na fonte consultada",
+    });
   });
 });

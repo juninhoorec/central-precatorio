@@ -4,7 +4,7 @@ export type AcquisitionProfile={id:string;name:string;version:string;state:strin
 export const defaultAcquisitionProfile:AcquisitionProfile={id:"precatorios-sp",name:"Precatórios SP — Padrão",version:"1.0",state:"SP",tribunal:"TJSP",minimumPrecatory:100000,minimumOfficialEvidence:2,requireDebtor:true,officeLabels:["Ofício 1","Ofício 2"],officeCategories:["OFICIO_EMPRESA","OFICIO_EMPRESA"],freshDays:7,recentDays:30,weights:{value:25,profile:20,freshness:15,identifiers:15,documents:10,twoOffices:10,noConflict:5}};
 export type Qualification={status:"NOVO"|"EM_QUALIFICACAO"|"QUALIFICADO"|"QUALIFICADO_COM_PENDENCIAS"|"NAO_QUALIFICADO"|"REVISAO_HUMANA"|"RPV_ANALISE_PARTICULAR"|"POSSIVEL_DUPLICADO";score:number;officeCount:number;freshness:"FRESH"|"RECENT"|"STALE"|"UNKNOWN";criteria:{key:string;label:string;ok:boolean;detail:string}[];nextAction:string;reasons:string[]};
 export type AcquisitionReadinessState="REJECTED"|"WAITING"|"QUALIFIED_WITH_PENDING"|"READY_FOR_ANALYST";
-export type AcquisitionReadinessInput={creditorName:string;amount:number|null;minimumAmount:number;numeroProcessoDEPRE:string;debtor:string;debtorState:string;tribunal:string;targetState:string;targetTribunal:string;officialEvidenceCount:number;requiredOfficialEvidence:number;identityConflict:boolean;contactAvailable?:boolean};
+export type AcquisitionReadinessInput={creditorName:string;amount:number|null;minimumAmount:number;numeroProcessoDEPRE:string;debtor:string;debtorState:string;tribunal:string;targetState:string;targetTribunal:string;officialEvidenceCount:number;requiredOfficialEvidence:number;identityConflict:boolean;contactAvailable?:boolean;processNumber?:string};
 export type AcquisitionReadiness={state:AcquisitionReadinessState;reasons:string[];criteria:{key:string;label:string;mandatory:boolean;ok:boolean;detail:string}[];ready:boolean;nextAction:string};
 export function evaluateAcquisitionReadiness(input:AcquisitionReadinessInput):AcquisitionReadiness{
  const hasUsableValue=Number.isFinite(input.amount)&&input.amount!==null&&input.amount>0;
@@ -14,6 +14,7 @@ export function evaluateAcquisitionReadiness(input:AcquisitionReadinessInput):Ac
  const creditorOk=Boolean(input.creditorName.trim());
  const evidenceOk=input.officialEvidenceCount>=input.requiredOfficialEvidence;
  const identityOk=!input.identityConflict;
+ const processOk=Boolean((input.processNumber||"").trim());
  const criteria=[
   {key:"creditor",label:"Nome do credor",mandatory:true,ok:creditorOk,detail:creditorOk?"Credor identificado com evidência":"Credor não identificado"},
   {key:"value",label:`Valor ≥ ${input.minimumAmount.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`,mandatory:true,ok:valueOk,detail:input.amount===null||!Number.isFinite(input.amount)?"Valor ausente; revisão necessária":input.amount===0?"Valor zero não é utilizável para qualificação":valueOk?"Valor atende ao mínimo comercial":"Abaixo do mínimo comercial"},
@@ -21,6 +22,7 @@ export function evaluateAcquisitionReadiness(input:AcquisitionReadinessInput):Ac
   {key:"jurisdiction",label:"Critério São Paulo",mandatory:true,ok:debtorMatches,detail:debtorMatches?`${input.debtor} · ${input.tribunal}`:`Devedora/tribunal fora do perfil ${input.targetState}`},
   {key:"officialEvidence",label:`Ofícios / documentos oficiais: ${input.officialEvidenceCount}/${input.requiredOfficialEvidence}`,mandatory:true,ok:evidenceOk,detail:evidenceOk?"Quantidade mínima de evidências oficiais verificada":"Evidência oficial individualizável insuficiente"},
   {key:"identityConflict",label:"Sem conflito crítico de identidade",mandatory:true,ok:identityOk,detail:identityOk?"Nenhum conflito crítico registrado":"Conflito de identidade requer revisão humana"},
+  {key:"processNumber",label:"Processo / Precatório",mandatory:false,ok:processOk,detail:processOk?input.processNumber!:"Não informado na fonte; opcional quando indisponível"},
   {key:"contact",label:"Contato localizado",mandatory:false,ok:Boolean(input.contactAvailable),detail:input.contactAvailable?"Contato público localizado; disponibilidade não validada":"Contato não localizado; não bloqueia a elegibilidade"},
  ];
  const reasons=criteria.filter(item=>item.mandatory&&!item.ok).map(item=>item.key==="value"&&input.amount!==null&&input.amount<input.minimumAmount?"BELOW_MINIMUM_VALUE":item.key==="jurisdiction"?"OUTSIDE_SAO_PAULO_PROFILE":item.key==="depre"?"MISSING_DEPRE":item.key==="creditor"?"CREDITOR_NOT_IDENTIFIED":item.key==="officialEvidence"?"OFFICIAL_EVIDENCE_INSUFFICIENT":item.key==="identityConflict"?"IDENTITY_CONFLICT":"VALUE_REQUIRES_REVIEW");

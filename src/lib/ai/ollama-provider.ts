@@ -11,7 +11,7 @@ export interface AIProviderConfig { baseUrl: string; model: string; timeoutMs: n
 export const defaultConfig: AIProviderConfig = {
   baseUrl: (process.env.CP_AI_BASE_URL || process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, ""),
   model: process.env.CP_AI_MODEL || process.env.OLLAMA_MODEL || "qwen3:4b",
-  timeoutMs: 45_000,
+  timeoutMs: 120_000,
   maxRetries: 2,
   keepAlive: process.env.OLLAMA_KEEP_ALIVE,
 };

@@ -89,6 +89,10 @@ describe("Ollama health check", () => {
 });
 
 describe("Structured generation", () => {
+  it("uses a 120 second timeout for structured generation requests", () => {
+    expect(defaultConfig.timeoutMs).toBe(120_000);
+  });
+
   it("serially retries invalid schemas and keeps the validated chat settings", async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ message: { content: "{\"wrongField\":true}" } }) });
     await expect(generateStructured("test", z.object({ ok: z.boolean() }), "", config)).rejects.toThrow(/AI structured generation failed/);

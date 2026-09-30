@@ -127,3 +127,139 @@ export async function recordCreditorResolutionAttempt(input: z.input<typeof reso
 }
 function rowAttempt(row: Record<string, unknown>): CreditorResolutionAttempt { return { id: String(row.id), organizationId: String(row.organization_id), operationId: String(row.operation_id), source: String(row.source), sourceUrl: String(row.source_url), mode: String(row.mode) as CreditorResolutionAttempt["mode"], queryKind: String(row.query_kind), queryValue: String(row.query_value), queryState: String(row.query_state) as CreditorResolutionAttempt["queryState"], resultCount: Number(row.result_count), candidates: JSON.parse(String(row.candidates_json)) as CreditorCandidateInput[], ...JSON.parse(String(row.resolution_json)) as CreditorResolution, capturedAt: String(row.captured_at), actorUserId: String(row.actor_user_id) }; }
 export async function listCreditorResolutionAttempts(organizationId: string, operationId?: string, client: Client = db) { await initializeCreditorResolution(client); const rows = await client.execute({ sql: operationId ? "SELECT * FROM creditor_resolution_attempts WHERE organization_id=? AND operation_id=? ORDER BY captured_at DESC LIMIT 100" : "SELECT * FROM creditor_resolution_attempts WHERE organization_id=? ORDER BY captured_at DESC LIMIT 1000", args: operationId ? [organizationId, operationId] : [organizationId] }); return rows.rows.map(rowAttempt); }
+
+export type OfficialDocumentCandidate = {
+  documentType: string;
+  documentDate: string;
+  numeroProcessoDEPRE: string;
+  officialSource: string;
+  consultationUrl: string;
+  documentUrl?: string;
+  accessStatus: "PUBLIC" | "AUTH_REQUIRED" | "UNAVAILABLE";
+  sourceReference: string;
+  evidenceId: string;
+  retrievedAt?: string;
+  confidence: number;
+  urlType?: "PROCESS_CONSULTATION" | "DOCUMENT_OPEN" | "EVENT_REFERENCE";
+};
+
+export type OfficialDocumentsResolution = {
+  documentationOficios: {
+    status: "0/2" | "1/2" | "2/2";
+    documents: OfficialDocumentCandidate[];
+  };
+  officialProcessUrl: string;
+  officialDocumentUrls: string[];
+  depre: string;
+  tribunal?: string;
+};
+
+export function resolveOfficialDocuments(input: {
+  numeroProcessoDEPRE: string;
+  debtor?: string;
+  tribunal?: string;
+  documents?: (Partial<OfficialDocumentCandidate> & Pick<OfficialDocumentCandidate, "documentType" | "numeroProcessoDEPRE" | "officialSource" | "consultationUrl" | "accessStatus" | "sourceReference" | "evidenceId" | "confidence">)[];
+}): OfficialDocumentsResolution {
+  const depre = (input.numeroProcessoDEPRE || "").trim();
+  const consultationUrl = input.documents?.find((document) => document.consultationUrl)?.consultationUrl || "";
+  const sourceDocuments = (input.documents || [])
+    .filter((document) => document && typeof document === "object" && document.numeroProcessoDEPRE && normalizeOfficialProcess(document.numeroProcessoDEPRE) === normalizeOfficialProcess(depre))
+    .map((document) => ({
+      documentType: String(document.documentType || "DOCUMENTO_OFICIAL"),
+      documentDate: String(document.documentDate || ""),
+      numeroProcessoDEPRE: String(document.numeroProcessoDEPRE || depre),
+      officialSource: String(document.officialSource || input.tribunal || "Fonte oficial"),
+      consultationUrl: String(document.consultationUrl || consultationUrl || ""),
+      documentUrl: document.documentUrl ? String(document.documentUrl) : undefined,
+      accessStatus: (document.accessStatus || "PUBLIC") as OfficialDocumentCandidate["accessStatus"],
+      sourceReference: String(document.sourceReference || document.evidenceId || "reference"),
+      evidenceId: String(document.evidenceId || `${depre}-${document.documentType}-${document.sourceReference || "reference"}`),
+      retrievedAt: document.retrievedAt || new Date().toISOString(),
+      confidence: Number.isFinite(document.confidence) ? Number(document.confidence) : 0.5,
+      urlType: document.documentUrl ? "DOCUMENT_OPEN" : "PROCESS_CONSULTATION",
+    } as OfficialDocumentCandidate));
+
+  const distinct = sourceDocuments.reduce<OfficialDocumentCandidate[]>((items, current) => {
+    const normalizedUrl = (current.documentUrl || current.consultationUrl || current.sourceReference).trim().toLowerCase();
+    const fingerprint = `${(current.documentType || "").trim().toLowerCase()}|${(current.documentDate || "").trim()}|${normalizedUrl}`;
+    const existing = items.some((item) => {
+      const itemUrl = (item.documentUrl || item.consultationUrl || item.sourceReference).trim().toLowerCase();
+      const itemFingerprint = `${(item.documentType || "").trim().toLowerCase()}|${(item.documentDate || "").trim()}|${itemUrl}`;
+      return itemFingerprint === fingerprint || itemUrl === normalizedUrl;
+    });
+    if (!existing) items.push(current);
+    return items;
+  }, []);
+
+  const ranked = distinct
+    .slice()
+    .sort((a, b) => Number(b.confidence) - Number(a.confidence) || (a.documentDate || "").localeCompare(b.documentDate || ""));
+
+  const selected = ranked.slice(0, 2);
+  const status = selected.length >= 2 ? "2/2" : selected.length === 1 ? "1/2" : "0/2";
+  return {
+    documentationOficios: { status, documents: selected },
+    officialProcessUrl: consultationUrl,
+    officialDocumentUrls: selected.map((document) => document.documentUrl || document.consultationUrl || "" ).filter(Boolean),
+    depre,
+    tribunal: input.tribunal,
+  };
+}
+
+export const CreditorResolver = resolveCreditor;
+export const OfficialDocumentResolver = resolveOfficialDocuments;
+
+export type ContactCandidate = {
+  type: "PHONE" | "MOBILE" | "EMAIL" | "WEBSITE" | "ADDRESS" | "OTHER";
+  value: string;
+  normalizedValue: string;
+  source: string;
+  sourceUrl: string;
+  confidence: number;
+  discoveredAt?: string;
+  publicSource: boolean;
+  belongsTo: "CREDOR" | "EMPRESA" | "ADVOGADO" | "ESCRITORIO" | "DESCONHECIDO";
+};
+
+export type BeneficiaryContactResolution = {
+  creditorName: string;
+  contacts: {
+    beneficiary: ContactCandidate[];
+    relatedProfessional: ContactCandidate[];
+  };
+  contactSummary: string;
+};
+
+export function discoverBeneficiaryContacts(input: {
+  creditorName?: string;
+  contactCandidates?: ContactCandidate[];
+}): BeneficiaryContactResolution {
+  const creditorName = (input.creditorName || "Beneficiário").trim();
+  const candidates = Array.isArray(input.contactCandidates) ? input.contactCandidates : [];
+  const beneficiary = candidates.filter((candidate) => {
+    const belongsTo = candidate.belongsTo;
+    return belongsTo === "CREDOR" || belongsTo === "EMPRESA" || (!belongsTo || belongsTo === "DESCONHECIDO") && /benefici|credor|empresa|titular/i.test(candidate.source || candidate.value || "");
+  });
+  const relatedProfessional = candidates.filter((candidate) => candidate.belongsTo === "ADVOGADO" || candidate.belongsTo === "ESCRITORIO");
+  const summaryPieces = [
+    creditorName ? `Beneficiário: ${creditorName}` : "Beneficiário: não informado",
+    beneficiary.length ? `Contato do beneficiário: ${beneficiary.map((item) => `${item.type}: ${item.value}`).join("; ")}` : "Contato do beneficiário: não encontrado",
+    relatedProfessional.length ? `Contato profissional relacionado: ${relatedProfessional.map((item) => `${item.type}: ${item.value}`).join("; ")}` : "Contato profissional relacionado: não encontrado",
+  ];
+  return {
+    creditorName,
+    contacts: { beneficiary, relatedProfessional },
+    contactSummary: summaryPieces.join(" | "),
+  };
+}
+
+export const ContactDiscoveryResolver = discoverBeneficiaryContacts;
+
+function normalizeOfficialProcess(value: string) {
+  return (value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export const documentationOficios = {
+  status: "0/2" as const,
+  documents: [] as OfficialDocumentCandidate[],
+};

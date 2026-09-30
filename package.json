@@ -9,10 +9,12 @@
     "lint": "eslint",
     "test": "vitest run",
     "auth:migrate": "node --import tsx scripts/auth-migrate.mts",
+    "auth:bootstrap-local-owner": "node --import tsx scripts/bootstrap-local-owner.mts --local-development",
     "migrate:domain": "node --import tsx scripts/migrate-domain.mts",
     "test:e2e": "playwright test",
     "source:check": "node --import tsx scripts/source-smoke.mts",
-    "source:esaj:investigate": "node --import tsx scripts/esaj-investigate.mts"
+    "source:esaj:investigate": "node --import tsx scripts/esaj-investigate.mts",
+    "ai:reconfirmation:dry-run": "node --import tsx scripts/ai-reconfirmation-benchmark-dry-run.mts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.57",

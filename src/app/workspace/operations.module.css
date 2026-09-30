@@ -24,3 +24,4 @@
 @media(max-width:640px){.benchmarkMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .metricScope{margin-top:22px;padding:10px 13px;border-left:3px solid #c48a12;background:#fff8df;color:#674c00;font-size:11px;font-weight:800;line-height:1.5}
 .demoMode{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.demoMode button[aria-pressed="true"]{background:#173c50;border-color:#173c50;color:#fff}.demoMode .demoBanner{flex-basis:100%;border:1px solid #e2c65c;border-radius:8px}.demoLeadDashboard>.captureBox,.demoLeadDashboard>details,.demoLeadDashboard>.leadFilters{display:none}
+.stockPill,.aiValidationPill{display:inline-flex;align-items:center;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:800;white-space:nowrap}.stockPill{background:#e8f3eb;color:#235b38}.aiValidationPill{background:#fff3d6;color:#79590c}.divergenceAlert{color:#a43324;font-weight:700}

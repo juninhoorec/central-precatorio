@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     // Local-only research/validation artifacts should not block the shipped product.
     ".local-data/**",
     "scripts/cp-real-corpus-ingest.mts",
+    "test-results/**",
+    "playwright-report/**",
+    "coverage/**",
   ]),
 ]);
 
