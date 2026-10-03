@@ -39,7 +39,7 @@ test("public business entry explains the synthetic demo without exposing records
   await expect(page.getByText("Credor Sintético Um")).toHaveCount(0);
 });
 
-test("Lead Center importa, preserva conflito, mostra fonte e converte para oportunidade",async({page})=>{
+test("Lead Center importa, preserva conflito, mostra fonte e converte para oportunidade",async({page,request})=>{
   const email=`cp-e2e-${Date.now()}@example.invalid`;
   await page.goto("/");
   await expect(page.locator("body")).toContainText("Central Precatórios");
@@ -95,6 +95,41 @@ test("Lead Center importa, preserva conflito, mostra fonte e converte para oport
   await expect(page.getByRole("status").filter({hasText:"Lead convertido em oportunidade mantendo o mesmo registro"})).toBeVisible();
   await expect(page.locator('[class*="detailHead"] small')).toContainText(originalId);
   await expect(page.locator('[class*="detailHead"] small')).toContainText("TRIAGE");
+  await page.goto("/crm");
+  await expect(page.getByRole("heading",{name:"CRM operacional"})).toBeVisible();
+  const canonicalOperationId = await page.evaluate(async () => {
+    const response = await fetch("/api/operations");
+    const body = await response.json() as { operations: Array<{ id: string; workflow: { credit: { numeroProcessoDEPRE: string } } }> };
+    return body.operations.find((operation) => operation.workflow.credit.numeroProcessoDEPRE === "DEMO-DEPRE-0001")?.id ?? null;
+  });
+  if (!canonicalOperationId) throw new Error("Synthetic demo operation was not returned by the tenant API.");
+  const unauthorizedMutation = await request.post("/api/crm", { data: { action: "create", id: crypto.randomUUID(), operationId: canonicalOperationId } });
+  expect(unauthorizedMutation.status()).toBe(401);
+  await page.getByLabel("ID da operação").fill(canonicalOperationId);
+  await page.getByRole("button",{name:"Criar registro CRM"}).click();
+  const crmCard=page.locator("article").filter({hasText:canonicalOperationId});
+  await expect(crmCard).toBeVisible({timeout:15_000});
+  await crmCard.getByLabel("Estágio").selectOption("QUALIFICATION");
+  await expect(crmCard.getByLabel("Estágio")).toHaveValue("QUALIFICATION");
+  await crmCard.getByLabel("Estágio").selectOption("CONTACT_PENDING");
+  await crmCard.getByRole("button",{name:"Registrar contato concluído"}).click();
+  await crmCard.getByLabel("Estágio").selectOption("CONTACTED");
+  await expect(crmCard.getByLabel("Estágio")).toHaveValue("CONTACTED");
+  await crmCard.getByRole("button",{name:"Criar tarefa"}).click();
+  await crmCard.getByRole("button",{name:"Registrar nota"}).click();
+  const taskAudit = await page.evaluate(async () => (await (await fetch("/api/audit?entityType=crm_task")).json()).events as { action: string }[]);
+  const activityAudit = await page.evaluate(async () => (await (await fetch("/api/audit?entityType=crm_activity")).json()).events as { action: string }[]);
+  expect(taskAudit.some((event) => event.action === "CRM_TASK_CREATED")).toBe(true);
+  expect(activityAudit.some((event) => event.action === "CRM_ACTIVITY_RECORDED")).toBe(true);
+  await page.reload();
+  await expect(page.locator("article").filter({hasText:canonicalOperationId}).getByLabel("Estágio")).toHaveValue("CONTACTED");
+  await page.goto("/workspace");
+  await page.getByRole("button",{name:"Captação",exact:true}).click();
+  await page.getByRole("button",{name:"Exemplos sintéticos",exact:true}).click();
+  await page.getByRole("button",{name:"Operações",exact:true}).click();
+  const demoOperationCard = page.getByRole("button").filter({hasText:"DEMONSTRAÇÃO — João da Silva"}).first();
+  await expect(demoOperationCard).toBeVisible();
+  await demoOperationCard.click();
   await page.getByRole("tab",{name:"Documentos"}).click();
   await expect(page.getByText("Documento demonstrativo — identificação do crédito.pdf")).toBeVisible();
   await expect(page.getByText(/TEXT_EXTRACTED.*correspondência MATCH/)).toBeVisible();
@@ -115,8 +150,18 @@ test("Lead Center importa, preserva conflito, mostra fonte e converte para oport
   await expect(page.getByLabel("Criada por")).toHaveValue("Analista de demonstração");
   await expect(page.getByLabel("Data e hora")).not.toHaveValue("");
   await expect(page.getByLabel("Condições")).toHaveValue(/Proposta demonstrativa/);
+  const offerSave = page.waitForResponse(response => response.url().endsWith("/api/operations") && response.request().method() === "PUT");
   await page.getByRole("button",{name:"Salvar",exact:true}).click();
-  await expect(page.getByRole("status").filter({hasText:"Operação salva no banco de dados"})).toBeVisible();
+  const offerSaveResponse = await offerSave;
+  expect(offerSaveResponse.status()).toBe(200);
+  const savedOffer = await offerSaveResponse.json() as { operation: { workflow: { commercialStatus: string; negotiations: unknown[] } } };
+  expect(savedOffer.operation.workflow).toMatchObject({ commercialStatus: "OFFERED" });
+  expect(savedOffer.operation.workflow.negotiations).toHaveLength(1);
+  const offerAudit = await page.evaluate(async (operationId) => {
+    const response = await fetch(`/api/audit?entityType=opportunity&entityId=${encodeURIComponent(operationId)}`);
+    return (await response.json()).events as { action: string }[];
+  }, canonicalOperationId);
+  expect(offerAudit.some((event) => event.action === "OFFER_CREATED")).toBe(true);
   await page.getByRole("tab",{name:"Visão geral"}).click();
   await expect(page.getByText("DEMO-DEPRE-0001").first()).toBeVisible();
   await page.getByRole("button",{name:"Captação", exact: true}).click();

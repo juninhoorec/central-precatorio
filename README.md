@@ -49,6 +49,7 @@ Antes da primeira execução ou após atualizar o código:
 ```bash
 npm run auth:migrate -- --apply
 npm run migrate:domain -- --apply
+node --import tsx scripts/apply-schema-migrations.mts
 ```
 
 Faça backup do banco antes de aplicar migrações.

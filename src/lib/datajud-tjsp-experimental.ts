@@ -24,6 +24,30 @@ export type DataJudProcessRecord = {
   identifiers: { hitId: unknown; sourceId: unknown };
 };
 
+export type DataJudNormalizedResult = {
+  kind: "DATAJUD";
+  total: number;
+  processes: DataJudProcessRecord[];
+};
+
+export type TjspNormalizedResult = {
+  kind: "TJSP_JUSCRAPER";
+  processNumber: string | null;
+  relatedProcessNumber: string | null;
+  className: string | null;
+  subject: string | null;
+  forum: string | null;
+  courtUnit: string | null;
+  parties: unknown;
+  movements: unknown;
+  identifiers: Record<string, unknown>;
+  officialUrl: string | null;
+};
+
+export type DataJudSearchResult = Omit<OfficialProcessSearchResult, "normalized"> & {
+  normalized?: DataJudNormalizedResult;
+};
+
 export type OfficialProcessSearchResult = {
   ok: boolean;
   source: "TJSP_DIRECT" | "DATAJUD_TJSP" | "DJEN" | "TJSP_ESAJ" | "TJSP_DEPRE_CAC";
@@ -43,7 +67,7 @@ export type OfficialProcessSearchResult = {
     rateLimitRemaining?: string | null;
   };
   rawPayload?: unknown;
-  normalized?: any;
+  normalized?: DataJudNormalizedResult | TjspNormalizedResult;
   error?: { code: string; message: string };
 };
 
@@ -150,7 +174,7 @@ function safeHeaders(headers: Headers): NonNullable<OfficialProcessSearchResult[
   };
 }
 
-function baseResult(query: OfficialProcessSearchRequest, status: string, code: string, message: string): OfficialProcessSearchResult {
+function baseResult(query: OfficialProcessSearchRequest, status: string, code: string, message: string): Omit<OfficialProcessSearchResult, "normalized"> & { normalized?: undefined } {
   return { ok: false, source: "DATAJUD_TJSP", status, requestAttempted: false, httpStatus: null, durationMs: 0, query: { ...query }, error: { code, message } };
 }
 
@@ -177,7 +201,7 @@ export class DataJudTJSPAdapter implements OfficialProcessRoute {
     return Boolean(request.processNumber?.trim()) && !request.partyName?.trim() && !request.documentNumber?.trim();
   }
 
-  async search(request: OfficialProcessSearchRequest): Promise<OfficialProcessSearchResult> {
+  async search(request: OfficialProcessSearchRequest): Promise<DataJudSearchResult> {
     if (!request.processNumber?.trim()) return baseResult(request, "INVALID_QUERY", "PROCESS_NUMBER_REQUIRED", "Esta rota requer processNumber.");
     if (request.partyName?.trim() || request.documentNumber?.trim()) return baseResult(request, "UNSUPPORTED_QUERY", "QUERY_FIELD_NOT_DOCUMENTED", "Nesta etapa, a API oficial foi verificada apenas para busca por numeroProcesso.");
     if (!isValidCnjProcessNumber(request.processNumber)) return baseResult(request, "INVALID_QUERY", "INVALID_CNJ_NUMBER", "O identificador não passou na validação estrutural e no dígito verificador CNJ.");
@@ -238,7 +262,7 @@ export class DataJudTJSPAdapter implements OfficialProcessRoute {
       if (!Array.isArray(hits)) return { ok: false, source: this.source, status: "INVALID_RESPONSE", requestAttempted: true, credentialSource, httpStatus: response.status, durationMs, endpoint, query: { ...request }, headers, rawPayload: safeRawPayload, error: { code: "INVALID_DATAJUD_HITS", message: "Resposta JSON sem hits.hits esperado." } };
       const processes = hits.map(normalizeHit).filter((record): record is DataJudProcessRecord => record !== null);
       const total = totalHits(payload);
-      return { ok: true, source: this.source, status: processes.length ? "FOUND" : "NO_RESULTS", requestAttempted: true, credentialSource, httpStatus: response.status, durationMs, endpoint, query: { ...request }, headers, rawPayload: safeRawPayload, normalized: { total: total ?? processes.length, processes } };
+      return { ok: true, source: this.source, status: processes.length ? "FOUND" : "NO_RESULTS", requestAttempted: true, credentialSource, httpStatus: response.status, durationMs, endpoint, query: { ...request }, headers, rawPayload: safeRawPayload, normalized: { kind: "DATAJUD", total: total ?? processes.length, processes } };
     } catch (error) {
       const timedOut = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
       const message = error instanceof Error ? safeText(error.message, secret) : "Falha de rede DataJud.";

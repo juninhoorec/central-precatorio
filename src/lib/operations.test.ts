@@ -1,7 +1,9 @@
 import { createClient } from "@libsql/client";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  applyOperationsSchema,
   createOperation,
+  initializeOperations,
   listOperations,
   operationTaskSchema,
   updateOperation,
@@ -19,6 +21,21 @@ function input(title: string) {
 }
 
 describe("operations repository", () => {
+  it("does not create an unmigrated schema on a runtime request", async () => {
+    const db = createClient({ url: ":memory:" });
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      await expect(initializeOperations(db)).rejects.toThrow("SCHEMA_MIGRATIONS_REQUIRED:20260919_cp21_foundation");
+      const table = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='operations'");
+      expect(table.rows).toHaveLength(0);
+      await applyOperationsSchema(db);
+      expect((await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='operations'")).rows).toHaveLength(1);
+    } finally {
+      vi.unstubAllEnvs();
+      await db.close();
+    }
+  });
+
   it("rejeita datas de calendário inválidas", () => {
     expect(
       operationTaskSchema.safeParse({

@@ -136,6 +136,9 @@ const BUILT_IN_OFFICIAL_DOMAINS = [
   "tjsp.jus.br",
   "cnj.jus.br",
   "trf3.jus.br",
+  "campinas.sp.gov.br",
+  "guarulhos.sp.gov.br",
+  "prefeitura.sp.gov.br",
 ];
 
 export function normalizeCnjProcessNumber(value: string) {

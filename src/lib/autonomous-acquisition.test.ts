@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createDefaultWorkflow } from "./operational-workflow";
 import { beginImport, initializeCaptureImports, recordImportSourceRow } from "./capture-imports";
 import { createOperation, getOperation } from "./operations";
-import { countVerifiedOfficialEvidence, enqueueImportedBatch, getAcquisitionProfile, getAutonomousDashboard, initializeAutonomousAcquisition, listAcquisitionContacts, processAcquisitionCycle, recordOfficialEvidence, recordAcquisitionContact } from "./autonomous-acquisition";
+import { auditDocumentaryQualification, countVerifiedOfficialEvidence, enqueueImportedBatch, getAcquisitionProfile, getAutonomousDashboard, initializeAutonomousAcquisition, listAcquisitionContacts, processAcquisitionCycle, recordOfficialEvidence, recordAcquisitionContact } from "./autonomous-acquisition";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -571,6 +571,17 @@ describe("autonomous acquisition queue", () => {
         },
       ]),
     ).toBe(1);
+  });
+
+  it("explains why an official municipal record does not qualify as documentation", () => {
+    const audit = auditDocumentaryQualification({
+      id: "municipal-record", organizationId: "org", operationId: "op", documentType: "OFFICIAL_RECORD",
+      title: "Diário Oficial", source: "Campinas", sourceUrl: "https://portal-api.campinas.sp.gov.br/publicacao.pdf", downloadUrl: "",
+      documentIdentifier: "PMC.2023.0001", reference: "PMC.2023.0001", publishedAt: "2023-04-14", collectedAt: "2026-01-01T00:00:00Z",
+      page: null, hash: "", contentFingerprint: "", status: "COLLECTED", evidenceStrength: "MEDIUM", notes: "", sourceProvenance: null,
+    });
+    expect(audit.qualifies).toBe(false);
+    expect(audit.reasons).toEqual(expect.arrayContaining(["DOCUMENT_TYPE_NOT_QUALIFYING", "STATUS_NOT_VERIFIED", "STRENGTH_NOT_STRONG"]));
   });
 
   it("does not attach official evidence to an operation in another organization", async () => {

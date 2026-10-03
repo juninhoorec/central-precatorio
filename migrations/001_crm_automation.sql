@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS crm_records (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, operation_id TEXT NOT NULL, opportunity_id TEXT, contact_ids TEXT NOT NULL, stage TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, next_action_at TEXT);
+CREATE INDEX IF NOT EXISTS idx_crm_records_org_updated ON crm_records(organization_id, updated_at);
+CREATE TABLE IF NOT EXISTS crm_stage_history (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, crm_id TEXT NOT NULL, from_stage TEXT NOT NULL, to_stage TEXT NOT NULL, actor_id TEXT NOT NULL, reason TEXT, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_crm_stage_history_org_crm ON crm_stage_history(organization_id, crm_id, created_at);
+CREATE TABLE IF NOT EXISTS crm_tasks (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, crm_id TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL, due_at TEXT, status TEXT NOT NULL, priority TEXT NOT NULL, assignee_id TEXT, completed_at TEXT, idempotency_key TEXT NOT NULL, UNIQUE(organization_id,idempotency_key));
+CREATE INDEX IF NOT EXISTS idx_crm_tasks_org_status_due ON crm_tasks(organization_id, status, due_at);
+CREATE TABLE IF NOT EXISTS crm_activities (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, crm_id TEXT NOT NULL, actor_id TEXT NOT NULL, type TEXT NOT NULL, notes TEXT NOT NULL, occurred_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_crm_activities_org_crm ON crm_activities(organization_id, crm_id, occurred_at);
+CREATE TABLE IF NOT EXISTS automation_jobs (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, job_type TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL, scheduled_at TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL, max_attempts INTEGER NOT NULL, idempotency_key TEXT NOT NULL, lease_until TEXT, started_at TEXT, completed_at TEXT, next_attempt_at TEXT, error_code TEXT, error_message TEXT, created_by TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(organization_id,idempotency_key));
+CREATE INDEX IF NOT EXISTS idx_automation_jobs_org_status_schedule ON automation_jobs(organization_id, status, scheduled_at);
+CREATE TABLE IF NOT EXISTS automation_alerts (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, entity_id TEXT NOT NULL, alert_key TEXT NOT NULL, severity TEXT NOT NULL, resolved INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, UNIQUE(organization_id,entity_id,alert_key));
+CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL);

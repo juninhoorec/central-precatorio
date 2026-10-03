@@ -109,6 +109,17 @@ describe("stateful real-layout CAC parser", () => {
     expect(missing.missingOptionalFields).toContain("epes");
   });
 
+  it("preserves negative amounts and their exact source evidence", () => {
+    const instance = parser();
+    instance.pushPage(1, recordRows(1, 800).map(item => item.text.startsWith("Valor atualizado:") ? { ...item, text: "Valor atualizado: -R$ 200.000,00" } : item));
+    const record = instance.finish().records[0];
+    const evidence = record.fieldEvidence.find(item => item.field === "amount");
+
+    expect(record.amount).toBe(-200000);
+    expect(evidence?.textSpan).toBe("Valor atualizado: -R$ 200.000,00");
+    expect(record.rawText).toContain(evidence?.textSpan);
+  });
+
   it("records debtor inherited from the report header with explicit provenance", () => {
     const instance = parser({ reportHeaderDebtor: { value: "ENTE PUBLICO EXEMPLO", page: 1, textSpan: "header report debtor" } });
     instance.pushPage(1, recordRows(1, 800, { debtor: "" }));

@@ -22,16 +22,13 @@ export const auth = betterAuth({
   secret,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   database: {
-    dialect: new LibsqlDialect({
-      url: process.env.DATABASE_URL || "file:central-precatorios.db",
-      authToken: process.env.DATABASE_AUTH_TOKEN,
-    }),
+    dialect: new LibsqlDialect({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN }),
     type: "sqlite",
   },
   emailAndPassword: { enabled: true, minPasswordLength: 12, maxPasswordLength: 128, requireEmailVerification: production, sendResetPassword: async ({user,url})=>deliverAuthMail({to:user.email,url,kind:"RESET_PASSWORD"}), resetPasswordTokenExpiresIn: 60*30 },
   emailVerification:{sendVerificationEmail:async({user,url})=>deliverAuthMail({to:user.email,url,kind:"VERIFY_EMAIL"}),sendOnSignUp:true,expiresIn:60*60*24},
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24, cookieCache: { enabled: false } },
-  rateLimit: { enabled: true, storage: "database", window: 60, max: 60 },
+  rateLimit: { enabled: true, storage: !production && process.env.BETTER_AUTH_RATE_LIMIT_STORAGE === "memory" ? "memory" : "database", window: 60, max: 60 },
   plugins: [twoFactor({issuer:"Central Precatórios"}),organization({
     requireEmailVerificationOnInvitation: true,
     organizationHooks: {

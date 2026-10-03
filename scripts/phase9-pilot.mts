@@ -1,0 +1,14 @@
+import { createClient } from "@libsql/client";
+import { initializeAutomation, runSourceAcquisitionJobOnce } from "../src/lib/automation-service";
+const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const organizationId = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
+const operationId = "d9f156b3-a743-4591-b0cf-d9626f87086f";
+await initializeAutomation(client);
+const before = await client.execute({ sql: "SELECT version, workflow FROM operations WHERE id=? AND organization_id=?", args: [operationId, organizationId] });
+const counts = await client.execute({ sql: "SELECT (SELECT count(*) FROM automation_jobs WHERE organization_id=?) jobs,(SELECT count(*) FROM audit_logs WHERE organization_id=?) audits", args: [organizationId, organizationId] });
+console.log("BEFORE", JSON.stringify({ operationId, organizationId, version: before.rows[0]?.version, jobs: counts.rows[0] }));
+const output = await runSourceAcquisitionJobOnce(organizationId, operationId, client);
+console.log("RESULT", JSON.stringify({ job: output.job, result: { status: output.result.status, sourceStatus: output.result.sourceResult?.status, candidates: output.result.candidates, resolved: output.result.resolved?.length, error: output.result.error } }));
+const after = await client.execute({ sql: "SELECT version, workflow FROM operations WHERE id=? AND organization_id=?", args: [operationId, organizationId] });
+const countsAfter = await client.execute({ sql: "SELECT (SELECT count(*) FROM automation_jobs WHERE organization_id=?) jobs,(SELECT count(*) FROM audit_logs WHERE organization_id=?) audits", args: [organizationId, organizationId] });
+console.log("AFTER", JSON.stringify({ version: after.rows[0]?.version, jobs: countsAfter.rows[0] }));

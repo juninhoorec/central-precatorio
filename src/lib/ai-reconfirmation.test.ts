@@ -309,10 +309,10 @@ describe("AI reconfirmation persistence", () => {
       runId: attempt!.id,
       actorUserId: "fixture-owner",
       client: db,
-      completion: { status: "COMPLETED", overallStatus: "RECONFIRMADO", confidence: 88, summary: "Campos identificadores compatíveis.", fieldResults: [fieldResult({ field: "numeroProcessoDEPRE", originalValue: "0038850-88.2017.8.26.0500", observedValue: "0038850-88.2017.8.26.0500", status: "CONFIRMADO", confidence: 95, sourceTokens: ["EVIDENCE-1"], sourceTokens: ["DOC-1"] })] },
+      completion: { status: "COMPLETED", overallStatus: "RECONFIRMADO", confidence: 88, summary: "Campos identificadores compatíveis.", fieldResults: [fieldResult({ field: "numeroProcessoDEPRE", originalValue: "0038850-88.2017.8.26.0500", observedValue: "0038850-88.2017.8.26.0500", status: "CONFIRMADO", confidence: 95, evidenceIds: [fixture.evidence.id], documentIds: [fixture.document.id] })] },
     });
     expect(completed?.status).toBe("COMPLETED");
-    expect(completed?.fieldResults[0]).toMatchObject({ field: "numeroProcessoDEPRE", status: "CONFIRMADO", evidenceIds: [fixture.evidence.id], evidenceIds: [fixture.document.id] });
+    expect(completed?.fieldResults[0]).toMatchObject({ field: "numeroProcessoDEPRE", status: "CONFIRMADO", evidenceIds: [fixture.evidence.id], documentIds: [fixture.document.id] });
     db.close();
   });
 
@@ -362,7 +362,7 @@ describe("AI reconfirmation persistence", () => {
     const db = createClient({ url: ":memory:" });
     const fixture = await makeFixture(db);
     const attempt = await startRun(fixture, db);
-    await expect(completeAiReconfirmation({ organizationId: fixture.organizationId, operationId: fixture.operation.id, runId: attempt!.id, actorUserId: "fixture-owner", client: db, completion: { status: "COMPLETED", overallStatus: "RECONFIRMADO", confidence: 50, summary: "Teste de integridade.", fieldResults: [fieldResult({ field: "titular", originalValue: "Titular Fixture", observedValue: "Titular Fixture", status: "CONFIRMADO", sourceTokens: ["EVIDENCE-999"] })] } })).rejects.toThrow("RECONFIRMATION_EVIDENCE_REFERENCE_MISMATCH");
+    await expect(completeAiReconfirmation({ organizationId: fixture.organizationId, operationId: fixture.operation.id, runId: attempt!.id, actorUserId: "fixture-owner", client: db, completion: { status: "COMPLETED", overallStatus: "RECONFIRMADO", confidence: 50, summary: "Teste de integridade.", fieldResults: [fieldResult({ field: "titular", originalValue: "Titular Fixture", observedValue: "Titular Fixture", status: "CONFIRMADO", evidenceIds: ["00000000-0000-4000-8000-000000000999"] })] } })).rejects.toThrow("RECONFIRMATION_EVIDENCE_REFERENCE_MISMATCH");
     const fields = await db.execute({ sql: "SELECT COUNT(*) AS count FROM ai_reconfirmation_field_results WHERE run_id=?", args: [attempt!.id] });
     expect(Number(fields.rows[0].count)).toBe(0);
     db.close();
@@ -410,7 +410,8 @@ describe("AI reconfirmation persistence", () => {
       idempotencyKey: `fixture-failed-${fixture.operation.id}`,
     }, db);
     const pending = await beginAiReconfirmation({ organizationId: fixture.organizationId, operationId: fixture.operation.id, actorUserId: "fixture-owner", model: "fixture-model", promptVersion: "v1", client: db, storage: fixture.storage });
-    const generate = vi.fn(async (prompt: string) => {
+    const generate = vi.fn(async (prompt: string, system: string) => {
+      void system;
       expect(prompt).toContain(fixture.evidence.id);
       expect(prompt).not.toContain(failedEvidence.id);
       return {
@@ -425,7 +426,7 @@ describe("AI reconfirmation persistence", () => {
             observedValue: confirmed ? originalValue : null,
             status: confirmed ? "CONFIRMADO" as const : "NÃO_CONFIRMADO" as const,
             confidence: confirmed ? 90 : null,
-            evidenceIds: confirmed ? [fixture.evidence.id] : [],
+            sourceTokens: confirmed ? ["EVIDENCE-1"] : [],
 
             observation: confirmed ? "Correspondência explícita na referência oficial." : "Sem evidência suficiente no pacote.",
           };

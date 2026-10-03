@@ -180,12 +180,13 @@ function valueOnLine(line: LayoutLine, key: FieldKey): string | null {
   if (found.match[1]) return found.match[1].trim();
   const valueStart = found.match.index + found.match[0].length;
   const valueEnd = findNextFieldLabel(line.text, valueStart, key);
-  const rawValue = line.text.slice(valueStart, valueEnd).replace(/^[\s:：-]+/, "").trim();
+  const rawValue = line.text.slice(valueStart, valueEnd).replace(/^[\s:：]+/, "").trim();
   if (key === "protocolDate") return rawValue.match(/[0-9]{2}[/-][0-9]{2}[/-][0-9]{4}/)?.[0] ?? null;
   if (key === "protocol") {
     const prefix = line.text.slice(0, found.match.index);
     if (/Data(?:\s+do)?\s*$/i.test(prefix)) return null;
   }
+  if (key !== "amount") return rawValue.replace(/^-+/, "").trim() || null;
   return rawValue || null;
 }
 

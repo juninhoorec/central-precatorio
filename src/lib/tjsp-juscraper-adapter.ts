@@ -5,6 +5,7 @@ import type {
   OfficialProcessRoute,
   OfficialProcessSearchRequest,
   OfficialProcessSearchResult,
+  TjspNormalizedResult,
 } from "./datajud-tjsp-experimental";
 
 const execFileAsync = promisify(execFile);
@@ -42,18 +43,7 @@ export type TjspJuscraperResult = Omit<OfficialProcessSearchResult, "normalized"
   officialUrl: string | null;
   officialUrlStatus: "RETURNED" | "NOT_RETURNED";
   rawPayload: unknown;
-  normalized?: {
-    processNumber: string | null;
-    relatedProcessNumber: string | null;
-    className: string | null;
-    subject: string | null;
-    forum: string | null;
-    courtUnit: string | null;
-    parties: unknown;
-    movements: unknown;
-    identifiers: Record<string, unknown>;
-    officialUrl: string | null;
-  };
+  normalized?: TjspNormalizedResult;
 };
 
 function asString(value: unknown): string | null {
@@ -278,7 +268,8 @@ export class TjspJuscraperAdapter implements OfficialProcessRoute {
       const officialUrlStatus: "RETURNED" | "NOT_RETURNED" = officialUrl ? "RETURNED" : "NOT_RETURNED";
       const identified = extractProcessInfo(processSummary);
 
-      const normalized: TjspJuscraperResult["normalized"] = {
+      const normalized: TjspNormalizedResult = {
+        kind: "TJSP_JUSCRAPER",
         processNumber: request.processNumber,
         relatedProcessNumber: null,
         className: asString(processSummary.classe ?? processSummary.class ?? processSummary.classeProcessual),

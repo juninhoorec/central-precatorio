@@ -15,6 +15,14 @@ export type ConfiguredAIProvider = {
   ollamaConfig?: AIProviderConfig;
 };
 
+export type AIProviderPreflight = { provider: string; model: string; endpoint: string; keyPresent: boolean };
+
+export function getAIProviderPreflight(): AIProviderPreflight {
+  const provider = process.env.CP_AI_PROVIDER || "ollama";
+  if (provider === "deepseek") return { provider, model: process.env.CP_AI_DEEPSEEK_MODEL || "deepseek-flash", endpoint: "https://api.deepseek.com", keyPresent: Boolean(process.env.CP_AI_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY) };
+  return { provider, model: process.env.CP_AI_MODEL || "local", endpoint: process.env.CP_AI_ENDPOINT || "local", keyPresent: Boolean(process.env.CP_AI_OPENAI_API_KEY) };
+}
+
 export type ProviderRequest = {
   endpoint: string;
   headers: Record<string, string>;

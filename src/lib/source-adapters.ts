@@ -1,0 +1,11 @@
+import { canonicalizeSourceResult, type CanonicalSourceResult } from "./source-coverage";
+import type { SourceAcquisitionResult } from "./research-pipeline";
+
+export type SourceAdapterInput = { provider: string; source: string; sourceId: string; route: string; requestedIdentifier: string; status: string; requestAttempted: boolean; httpStatus?: number | null; sourceUrl?: string | null; officialSourceUrl?: string | null; startedAt?: string | null; completedAt?: string | null; durationMs?: number | null; errorCode?: string | null; errorMessage?: string | null; rawPayload?: unknown; metadata?: Record<string, unknown>; documentaryCandidates?: SourceAcquisitionResult["documentaryCandidates"] };
+export function adaptSourceResult(input: SourceAdapterInput): SourceAcquisitionResult {
+  const canonical = canonicalizeSourceResult({ ...input, queryIdentifier: input.requestedIdentifier, finishedAt: input.completedAt, officialUrl: input.officialSourceUrl ?? input.sourceUrl, errorCategory: input.errorCode });
+  return { provider: input.provider, source: input.source, sourceId: input.sourceId, route: input.route, requestedIdentifier: input.requestedIdentifier, normalizedIdentifier: null, startedAt: input.startedAt ?? null, completedAt: input.completedAt ?? null, durationMs: input.durationMs ?? null, status: canonical.status, requestAttempted: input.requestAttempted, httpStatus: input.httpStatus ?? null, sourceUrl: input.sourceUrl ?? null, officialSourceUrl: input.officialSourceUrl ?? null, errorCode: input.errorCode ?? canonical.errorCategory, errorMessage: input.errorMessage ?? canonical.errorMessage, rawPayload: input.rawPayload ?? null, metadata: input.metadata ?? {}, documentaryCandidates: input.documentaryCandidates ?? [], canonicalResult: canonical };
+}
+export const adaptDjenResult = (input: Omit<SourceAdapterInput, "source" | "sourceId">) => adaptSourceResult({ ...input, source: "DJEN", sourceId: "djen" });
+export const adaptEsajResult = (input: Omit<SourceAdapterInput, "source" | "sourceId">) => adaptSourceResult({ ...input, source: "TJSP_ESAJ", sourceId: "tjsp-esaj" });
+export const adaptCacResult = (input: Omit<SourceAdapterInput, "source" | "sourceId">) => adaptSourceResult({ ...input, source: "TJSP_DEPRE_CAC", sourceId: "tjsp-depre-cac" });

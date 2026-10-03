@@ -1,0 +1,9 @@
+import { createClient } from "@libsql/client";
+import { calculateOperationalKpis } from "../src/lib/operational-kpis";
+const c = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const org = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
+const kpis = await calculateOperationalKpis(c, org);
+const source = await c.execute({ sql: "SELECT source, COUNT(*) n FROM audit_logs WHERE organization_id=? AND action='ACQUISITION_JOB_PROCESSED' GROUP BY source", args: [org] });
+const tenants = await c.execute("SELECT organization_id, COUNT(*) operations FROM operations GROUP BY organization_id");
+const crm = await c.execute({ sql: "SELECT COUNT(*) records, (SELECT COUNT(*) FROM crm_tasks WHERE organization_id=?) tasks, (SELECT COUNT(*) FROM crm_activities WHERE organization_id=?) activities FROM crm_records WHERE organization_id=?", args: [org, org, org] });
+console.log(JSON.stringify({ kpis, sourceHealth: source.rows, crm: crm.rows[0], tenants: tenants.rows, waves: { A: 15, B: 25, C: 50, D: kpis.uniqueDepre } }, null, 2));

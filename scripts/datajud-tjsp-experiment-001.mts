@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createResearchOfficialProcessRoutes, OfficialProcessSourceCollector } from "../src/lib/official-process-source-collector";
-import { DataJudTJSPAdapter } from "../src/lib/datajud-tjsp-experimental";
+import { DataJudTJSPAdapter, type DataJudProcessRecord } from "../src/lib/datajud-tjsp-experimental";
 import { isValidCnjProcessNumber, normalizeCnjProcessNumber } from "../src/lib/acquisition-sources";
 
 const processNumber = "0196151-64.2018.8.26.0500";
@@ -40,11 +40,11 @@ async function main() {
   const djen = results.find((result) => result.source === "DJEN");
   const esaj = results.find((result) => result.source === "TJSP_ESAJ");
   const cac = results.find((result) => result.source === "TJSP_DEPRE_CAC");
-  const processes = dataJud?.normalized?.processes ?? [];
+  const processes = ((dataJud?.normalized && "processes" in dataJud.normalized) ? dataJud.normalized.processes : []) as DataJudProcessRecord[];
   const normalizedTarget = normalizeCnjProcessNumber(processNumber);
-  const exactTargetMatches = processes.filter((record: any) => normalizeCnjProcessNumber(record.processNumber || "") === normalizedTarget);
+  const exactTargetMatches = processes.filter((record) => normalizeCnjProcessNumber(record.processNumber || "") === normalizedTarget);
   const durationMs = Date.now() - startedAt;
-  const sourceRows = results.map((result) => `| ${result.source} | ${result.status} | ${result.requestAttempted ? "sim" : "não"} | ${result.httpStatus ?? "—"} | ${result.normalized?.total ?? "—"} | ${result.error?.message || "—"} |`).join("\n");
+  const sourceRows = results.map((result) => `| ${result.source} | ${result.status} | ${result.requestAttempted ? "sim" : "não"} | ${result.httpStatus ?? "—"} | ${result.normalized?.kind === "DATAJUD" ? result.normalized.total : "—"} | ${result.error?.message || "—"} |`).join("\n");
   const report = `# DataJud TJSP — Experimento 001
 
 Data: ${new Date().toISOString()}
@@ -78,7 +78,7 @@ DataJud é a primeira rota. Zero resultados, configuração ausente ou falha nã
 - HTTP: ${dataJud?.httpStatus ?? "—"}
 - Duração: ${dataJud?.durationMs ?? 0} ms
 - Requisição DataJud enviada: ${dataJud?.requestAttempted ? "sim" : "não"}
-- Total de hits: ${dataJud?.normalized?.total ?? "—"}
+- Total de hits: ${dataJud?.normalized?.kind === "DATAJUD" ? dataJud.normalized.total : "—"}
 - Hits DataJud: ${processes.length}
 - Correspondências exatas após normalização do numeroProcesso: ${exactTargetMatches.length}
 - Status DataJud do coletor: ${dataJud?.error?.code || "—"}
@@ -98,7 +98,7 @@ ${markdownJson(dataJud?.rawPayload ?? null, apiKey)}
 
 - A API foi consultada diretamente pelo numeroProcesso normalizado somente se requestAttempted=true.
 - DEPRE correspondente diretamente retornado: ${exactTargetMatches.length ? "sim" : dataJud?.requestAttempted ? "não" : "NÃO TESTADO — DataJud não foi consultado"}.
-- Outros números retornados: ${processes.map((record: any) => record.processNumber || "(numeroProcesso ausente)").join(", ") || "nenhum"}.
+- Outros números retornados: ${processes.map((record) => record.processNumber || "(numeroProcesso ausente)").join(", ") || "nenhum"}.
 - Processos originários: o adapter não infere processo originário; nenhum campo dedicado é normalizado nesta fase.
 
 ## Movimentações e metadados

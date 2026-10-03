@@ -95,6 +95,7 @@ const client = createClient({
   url: process.env.DATABASE_URL || "file:central-precatorios.db",
   authToken: process.env.DATABASE_AUTH_TOKEN,
 });
+const initializedOperationSchemas = new WeakSet<Client>();
 
 const TABLE_SQL = `CREATE TABLE IF NOT EXISTS operations (
   id TEXT PRIMARY KEY,
@@ -118,7 +119,7 @@ const TABLE_SQL = `CREATE TABLE IF NOT EXISTS operations (
   updated_at TEXT NOT NULL
 )`;
 
-export async function initializeOperations(db: Client = client) {
+export async function applyOperationsSchema(db: Client = client) {
   await db.execute(TABLE_SQL);
   const columns = await db.execute("PRAGMA table_info(operations)");
   if (!columns.rows.some(row => row.name === "organization_id")) {
@@ -138,6 +139,27 @@ export async function initializeOperations(db: Client = client) {
   await db.execute(
     "CREATE INDEX IF NOT EXISTS operations_updated_at_idx ON operations(updated_at DESC)",
   );
+  initializedOperationSchemas.add(db);
+}
+
+export async function initializeOperations(db: Client = client) {
+  if (initializedOperationSchemas.has(db)) return;
+  if (process.env.NODE_ENV === "test") {
+    await applyOperationsSchema(db);
+    return;
+  }
+  let migrations: { version: unknown }[];
+  try {
+    migrations = (await db.execute("SELECT version FROM cp_migrations WHERE version='20260919_cp21_foundation'")).rows as unknown as { version: unknown }[];
+  } catch {
+    throw new Error("SCHEMA_MIGRATIONS_REQUIRED:20260919_cp21_foundation");
+  }
+  if (!migrations.length) throw new Error("SCHEMA_MIGRATIONS_REQUIRED:20260919_cp21_foundation");
+  const columns = await db.execute("PRAGMA table_info(operations)");
+  const existingColumns = new Set(columns.rows.map(row => String(row.name)));
+  const requiredColumns = ["id", "version", "workflow", "is_demo", "organization_id"];
+  const missing = requiredColumns.filter(column => !existingColumns.has(column));
+  if (missing.length) throw new Error(`OPERATIONS_SCHEMA_INCOMPLETE:${missing.join(",")}`);
 }
 
 function workflowFromRow(row: Record<string, unknown>) {

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { extractCacReportHeader, TjspCacRecordParser, type TjspCacRecord } from "@/lib/tjsp-cac-record-parser";
 import { parseAmount } from "@/lib/tjsp-import";
+import { normalizeDepreIdentifier } from "@/lib/identifier-normalizer";
 
 const root = resolve(".local-data/real-cac");
 const manifest = JSON.parse(await readFile(resolve(root, "INGESTION_SUMMARY.json"), "utf8")) as {
@@ -16,6 +17,7 @@ if (selected.length === 0) throw new Error("No requested CAC documents found in 
 
 const output = [];
 const crossDocumentDepre = new Map<string, Map<string, Set<number>>>();
+const depreOccurrencesByDocument = new Map<string, Map<string, number>>();
 const evidenceFieldNames = ["paymentOrder", "numeroProcessoDEPRE", "numeroAutos", "numeroProcessoOriginario", "nature", "numeroEPES", "budgetOrder", "suspended", "superPriority", "amount", "protocolDate", "generalProtocol", "legacyProcess", "attorneys", "debtor"] as const;
 const evidenceChecks: Record<string, { checked: number; supported: number; unsupported: number }> = Object.fromEntries(evidenceFieldNames.map(name => [name, { checked: 0, supported: 0, unsupported: 0 }]));
 const normalizeEvidence = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -52,6 +54,8 @@ for (const document of selected) {
   const samples: Array<Record<string, unknown>> = [];
   const sampleInterval = Math.max(1, Math.floor(document.recordsUnvalidated / 10));
   const depreCounts = new Map<string, number>();
+  let depreOccurrences = 0;
+  let depreNormalizationFailures = 0;
   const sampledNature = new Set<string>();
   let sampledEpesPresent = false;
   let sampledEpesAbsent = false;
@@ -164,12 +168,18 @@ for (const document of selected) {
         }
       }
       if (record.numeroProcessoDEPRE) {
-        depreCounts.set(record.numeroProcessoDEPRE, (depreCounts.get(record.numeroProcessoDEPRE) ?? 0) + 1);
-        const documents = crossDocumentDepre.get(record.numeroProcessoDEPRE) ?? new Map<string, Set<number>>();
-        const pages = documents.get(document.documentId) ?? new Set<number>();
-        pages.add(record.fieldEvidence.find(evidence => evidence.field === "numeroProcessoDEPRE")?.page ?? record.startPage);
-        documents.set(document.documentId, pages);
-        crossDocumentDepre.set(record.numeroProcessoDEPRE, documents);
+        depreOccurrences++;
+        const normalizedDepre = normalizeDepreIdentifier(record.numeroProcessoDEPRE).normalized;
+        if (!normalizedDepre) {
+          depreNormalizationFailures++;
+        } else {
+          depreCounts.set(normalizedDepre, (depreCounts.get(normalizedDepre) ?? 0) + 1);
+          const documents = crossDocumentDepre.get(normalizedDepre) ?? new Map<string, Set<number>>();
+          const pages = documents.get(document.documentId) ?? new Set<number>();
+          pages.add(record.fieldEvidence.find(evidence => evidence.field === "numeroProcessoDEPRE")?.page ?? record.startPage);
+          documents.set(document.documentId, pages);
+          crossDocumentDepre.set(normalizedDepre, documents);
+        }
       }
       for (const evidence of record.fieldEvidence) {
         const validHeaderEvidence = evidence.source === "REPORT_HEADER"
@@ -260,11 +270,19 @@ for (const document of selected) {
   const summary = parser.finish();
   const duplicateDepreIds = [...depreCounts.values()].filter(count => count > 1).length;
   const duplicateDepreRecords = [...depreCounts.values()].reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+  depreOccurrencesByDocument.set(document.documentId, depreCounts);
   output.push({
     filename: document.filename,
     documentId: document.documentId,
-    sha256Verified: true,
+    documentIdentifier: document.filename,
+    sourceUrl: null,
+    sourceUrlCaptured: false,
+    acquisitionReference: "User-supplied CP_REAL_CAC_PILOT_CORPUS.zip",
+    officialReference: null,
     sourceReferenceDate: document.sourceReferenceDate,
+    publicationDateCaptured: false,
+    sha256Verified: true,
+    contentHash: sha256,
     collectedAt: document.collectedAt,
     pagesInManifest: document.pages,
     candidateReference: document.recordsUnvalidated,
@@ -274,6 +292,10 @@ for (const document of selected) {
     candidateStarts: summary.stats.candidateStarts,
     acceptedRecords: summary.stats.acceptedRecords,
     rejectedCandidates: summary.stats.rejectedCandidates,
+    depreOccurrences,
+    uniqueDepreIdentifiers: depreCounts.size,
+    repeatedDepreOccurrences: depreOccurrences - depreCounts.size - depreNormalizationFailures,
+    depreNormalizationFailures,
     rejectionReasons: summary.stats.rejectionReasons,
     spanningRecords: summary.stats.spanningRecords,
     fieldPopulatedCounts: fieldCounts,
@@ -298,11 +320,42 @@ const crossDocumentClusters = [...crossDocumentDepre.entries()]
     sourceDocumentIds: [...documents.keys()],
     evidencePagesByDocument: Object.fromEntries([...documents.entries()].map(([id, pages]) => [id, [...pages].sort((a, b) => a - b)])),
   }));
+const uniqueDepreIdentifiers = crossDocumentDepre.size;
+const depreOccurrences = output.reduce((total, document) => total + Number(document.depreOccurrences), 0);
+const depreNormalizationFailures = output.reduce((total, document) => total + Number(document.depreNormalizationFailures), 0);
+const repeatedDepreOccurrences = depreOccurrences - uniqueDepreIdentifiers - depreNormalizationFailures;
+const duplicateDepreOccurrencesWithinDocuments = output.reduce((total, document) => total + Number(document.repeatedDepreOccurrences), 0);
+const repeatedDepreOccurrencesAcrossDocuments = repeatedDepreOccurrences - duplicateDepreOccurrencesWithinDocuments;
+const contentHashCounts = new Map<string, number>();
+for (const document of output) contentHashCounts.set(String(document.contentHash), (contentHashCounts.get(String(document.contentHash)) ?? 0) + 1);
+const documentIdCounts = new Map<string, number>();
+for (const document of output) documentIdCounts.set(String(document.documentId), (documentIdCounts.get(String(document.documentId)) ?? 0) + 1);
+const documentAudit = {
+  pdfCount: output.length,
+  uniqueContentHashes: contentHashCounts.size,
+  duplicateContentHashReferences: [...contentHashCounts.values()].filter(count => count > 1).reduce((sum, count) => sum + count - 1, 0),
+  uniqueDocumentIds: documentIdCounts.size,
+  duplicateDocumentIdReferences: [...documentIdCounts.values()].filter(count => count > 1).reduce((sum, count) => sum + count - 1, 0),
+  sourceUrlsCaptured: output.filter(document => document.sourceUrlCaptured).length,
+  sourceUrlsNotCaptured: output.filter(document => !document.sourceUrlCaptured).length,
+};
+const depreAudit = {
+  pdfCount: output.length,
+  depreOccurrences,
+  uniqueDepreIdentifiers,
+  repeatedDepreOccurrences,
+  repeatedDepreOccurrencesWithinDocuments: duplicateDepreOccurrencesWithinDocuments,
+  repeatedDepreOccurrencesAcrossDocuments,
+  uniqueDepresPresentInMultipleDocuments: crossDocumentClusters.length,
+  normalizationFailures: depreNormalizationFailures,
+};
 const report = summaryOnly
   ? {
       documents: output.map(({ samples, fieldEvidenceFailureSamples, ...summary }) => summary),
+      documentAudit,
+      depreAudit,
       crossDocumentClusterCount: crossDocumentClusters.length,
       crossDocumentClusterSample: crossDocumentClusters.slice(0, 25),
     }
-  : { documents: output, crossDocumentClusters };
+  : { documents: output, documentAudit, depreAudit, crossDocumentClusters };
 console.log(JSON.stringify(report, null, 2));

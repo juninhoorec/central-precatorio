@@ -13,15 +13,15 @@ export async function requireTenant(headers: Headers): Promise<{ organizationId:
   return { organizationId, userId: session.user.id, role: member.role };
 }
 
-export type TenantPermission = "operation:read" | "operation:write" | "document:read" | "document:upload" | "document:review" | "legal:review" | "audit:read" | "demo:manage";
+export type TenantPermission = "operation:read" | "operation:write" | "document:read" | "document:upload" | "document:review" | "legal:review" | "audit:read" | "demo:manage" | "crm:read" | "crm:write";
 const rolePermissions: Record<string, readonly TenantPermission[]> = {
-  owner: ["operation:read","operation:write","document:read","document:upload","document:review","legal:review","audit:read","demo:manage"],
-  admin: ["operation:read","operation:write","document:read","document:upload","document:review","legal:review","audit:read","demo:manage"],
-  analyst: ["operation:read","operation:write","document:read","document:upload","document:review"],
-  commercial: ["operation:read","operation:write","document:read"],
+  owner: ["operation:read","operation:write","document:read","document:upload","document:review","legal:review","audit:read","demo:manage","crm:read","crm:write"],
+  admin: ["operation:read","operation:write","document:read","document:upload","document:review","legal:review","audit:read","demo:manage","crm:read","crm:write"],
+  analyst: ["operation:read","operation:write","document:read","document:upload","document:review","crm:read","crm:write"],
+  commercial: ["operation:read","operation:write","document:read","crm:read","crm:write"],
   legal: ["operation:read","document:read","legal:review"],
-  read_only: ["operation:read","document:read"],
-  member: ["operation:read","document:read"],
+  read_only: ["operation:read","document:read","crm:read"],
+  member: ["operation:read","document:read","crm:read"],
 };
 export function roleHasPermission(role:string, permission:TenantPermission) { return Boolean(rolePermissions[role.toLowerCase()]?.includes(permission)); }
 export async function requireTenantPermission(headers:Headers, permission:TenantPermission) {

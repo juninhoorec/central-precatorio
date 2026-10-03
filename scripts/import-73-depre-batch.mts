@@ -13,7 +13,8 @@ const rows = XLSX.utils.sheet_to_json(workbook.Sheets['Contatos 73'], {
   blankrows: false,
   defval: '',
 });
-const rawData = (rows as any[]).slice(1).filter((row: any) => String(row?.[1] ?? '').trim());
+const rawData = (rows as unknown[][]).slice(1).filter((row) => String(row?.[1] ?? '').trim());
+const cell = (row: unknown[], index: number) => String(row[index] ?? '').trim();
 
 const organizationId = 'legacy-internal';
 const existing = await listOperations(undefined, organizationId);
@@ -37,13 +38,13 @@ let created = 0;
 let skipped = 0;
 
 for (const [index, row] of rawData.entries()) {
-  const municipio = String((row as any)[0] || '').trim();
-  const depre = String((row as any)[1] || '').trim();
-  const titular = String((row as any)[2] || '').trim();
-  const statusContato = String((row as any)[3] || '').trim();
-  const rotaContato = String((row as any)[4] || '').trim();
-  const detalhe = String((row as any)[5] || '').trim();
-  const fonteBusca = String((row as any)[6] || '').trim();
+  const municipio = cell(row, 0);
+  const depre = cell(row, 1);
+  const titular = cell(row, 2);
+  const statusContato = cell(row, 3);
+  const rotaContato = cell(row, 4);
+  const detalhe = cell(row, 5);
+  const fonteBusca = cell(row, 6);
 
   if (!depre) {
     skipped += 1;

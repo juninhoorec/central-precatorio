@@ -109,7 +109,10 @@ function tryMatchCandidate(
   }
 
   // 3. Exact DEPRE/CNJ process number match via acquisition result route
-  const requestedId = candidate.acquisitionResultRef.sourceUrl ?? "";
+  const requestedId = candidate.acquisitionResultRef.normalizedIdentifier
+    ?? candidate.acquisitionResultRef.requestedIdentifier
+    ?? candidate.acquisitionResultRef.sourceUrl
+    ?? "";
   if (requestedId) {
     const normCandidate = normalizeDepreIdentifier(requestedId);
     if (normCandidate.normalized) {
