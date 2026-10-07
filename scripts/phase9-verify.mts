@@ -5,6 +5,7 @@ import { countVerifiedOfficialEvidence, listOfficialEvidence } from "../src/lib/
 
 const ORGANIZATION_ID = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u"; // Active tenant
 
+// @ts-ignore
 process.env.NODE_ENV = "test";
 
 async function run() {

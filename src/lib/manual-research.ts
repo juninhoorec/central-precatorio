@@ -79,7 +79,7 @@ export async function applyManualResearchSchema(client: Client = db) {
 // ---------------------------------------------------------------------------
 
 /** Canonical status of a manual research task. NOT to be confused with source blocker status. */
-export type ManualTaskStatus = "OPEN" | "IN_PROGRESS" | "BLOCKED" | "COMPLETED" | "CANCELLED";
+export type ManualTaskStatus = "OPEN" | "IN_PROGRESS" | "WAITING_EXTERNAL" | "BLOCKED" | "COMPLETED" | "CANCELLED";
 
 /** Priority derived deterministically from the blocker codes present. */
 export type ManualTaskPriority = "HIGH" | "MEDIUM" | "LOW";
@@ -788,7 +788,7 @@ export async function submitManualEvidence(
 
   // Auto-complete if opportunity is ready or primary blocker is resolved, otherwise IN_PROGRESS
   const isStillBlocked = enrichResult 
-    ? enrichResult.blockers.some(b => task.instructions.targetBlockerCodes.includes(b))
+    ? enrichResult.blockers.some((b: any) => task.instructions.targetBlockerCodes.includes(b))
     : true;
   
   const newStatus = isStillBlocked ? "IN_PROGRESS" : "COMPLETED";
