@@ -53,3 +53,10 @@ export async function verifyAuditChain(organizationId:string, client:Client=db){
   await initializeAudit(client); const result=await client.execute({sql:"SELECT * FROM audit_logs WHERE organization_id=? ORDER BY rowid ASC",args:[organizationId]}); let previous="";
   for(const r of result.rows){const payload={id:String(r.id),organizationId:String(r.organization_id),actorUserId:String(r.actor_user_id),action:String(r.action),entityType:String(r.entity_type),entityId:String(r.entity_id),previousStateSummary:JSON.parse(String(r.previous_state_summary)),nextStateSummary:JSON.parse(String(r.next_state_summary)),metadata:JSON.parse(String(r.metadata)),requestId:String(r.request_id),source:String(r.source),timestamp:String(r.timestamp),previousEventHash:String(r.previous_event_hash)};const hash=createHash("sha256").update(stable(payload)).digest("hex");if(String(r.previous_event_hash)!==previous||String(r.event_hash)!==hash)return false;previous=String(r.event_hash)} return true;
 }
+
+/** Idempotency guard: returns true if an audit entry for this requestId already exists. */
+export async function hasAuditRequest(requestId:string, client:Client=db):Promise<boolean>{
+  await initializeAudit(client);
+  const result=await client.execute({sql:"SELECT id FROM audit_logs WHERE request_id=? LIMIT 1",args:[requestId]});
+  return result.rows.length>0;
+}

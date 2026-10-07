@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sourceResultStatuses } from "./source-coverage";
 
 export const workflowStages = [
   "NEW", "TRIAGE", "QUERY", "VALIDATION", "DOCUMENTS", "LEGAL_REVIEW",
@@ -83,10 +84,36 @@ export function inventoryMetadataForSources(sources: readonly string[], stored?:
 
 export const officeSlotSchema=z.object({id:z.string().uuid(),label:z.string().trim().min(1).max(120),category:z.string().trim().max(80),requiredForQualification:z.boolean(),status:z.enum(["PENDENTE","RECEBIDO","EM_CONFERENCIA","VALIDADO_PARA_TRIAGEM","DIVERGENTE","NAO_APLICAVEL","REVISAO_HUMANA"]),documentId:z.string().uuid().or(z.literal("")),source:z.string().trim().max(500),receivedAt:z.union([z.literal(""),z.iso.datetime()]),reviewedAt:z.union([z.literal(""),z.iso.datetime()]),reviewer:z.string().trim().max(160),discrepancyStatus:z.enum(["NONE","PENDING","RESOLVED"]).default("NONE"),notes:z.string().trim().max(2000)}).strict();
 
+export const beneficiaryObservationSchema = z.object({
+  id: z.string().uuid(),
+  depre: z.string().regex(/^\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}$/),
+  name: short,
+  role: z.enum(["TITULAR", "CREDOR", "BENEFICIARIO", "REQUERENTE", "HERDEIRO", "CESSIONARIO", "UNKNOWN"]),
+  status: z.enum(["UNVERIFIED_IMPORT", "HISTORICAL_CONFIRMED", "CURRENT_CONFIRMED", "DIVERGENT"]),
+  source: short,
+  sourceUrl: z.string().url().or(z.literal("")),
+  sourceType: z.enum(["OFFICIAL_PUBLICATION", "OFFICIAL_API", "OFFICIAL_REGISTER", "IMPORTED_SNAPSHOT"]),
+  provider: short,
+  sourceId: short,
+  route: short,
+  sourceStatus: z.enum(sourceResultStatuses),
+  documentIdentifier: z.string().trim().max(240),
+  reference: z.string().trim().max(500),
+  collectedAt: z.iso.datetime(),
+  evidenceId: z.string().uuid().or(z.literal("")),
+  evidenceStrength: z.enum(["STRONG", "MEDIUM", "WEAK"]).or(z.literal("")),
+  lawyerName: z.string().trim().max(240),
+  lawyerOab: z.string().trim().max(40),
+  lawyerSource: z.string().trim().max(160),
+  lawyerSourceUrl: z.string().url().or(z.literal("")),
+  lawyerSourceStatus: z.enum(sourceResultStatuses).or(z.literal("")),
+  context: z.string().trim().max(1000).default(""),
+}).strict();
+
 export const operationalWorkflowSchema = z.object({
   inventory: inventoryMetadataSchema.default(defaultInventoryMetadata),
   stage: z.enum(workflowStages), priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]), confidence: z.number().min(0).max(100),
-  client: z.object({ name: short, document: z.string().trim().max(24), phone: z.string().trim().max(32), email: z.string().trim().max(254) }).strict(),
+  client: z.object({ name: short, document: z.string().trim().max(24), phone: z.string().trim().max(32), email: z.string().trim().max(254), beneficiaries: z.array(beneficiaryObservationSchema).max(100).default([]) }).strict(),
   credit: z.object({ precatoryNumber: z.string().trim().max(120), numeroProcessoDEPRE:z.string().trim().max(120).default(""), numeroProcessoDEPRENormalizado:z.string().trim().max(120).default(""), paymentOrderNumber:z.string().trim().max(120).default(""), nature: short, grossAmount: optionalMoney, availableEstimate: optionalMoney, creditType:z.enum(["PRECATORY","RPV"]).default("PRECATORY"), municipality:z.string().trim().max(120).default(""), issuingCourt:z.string().trim().max(120).default(""), debtorState:z.string().trim().max(60).default("SP"), sourceUrl:z.string().trim().max(1000).default(""), sourceName:z.string().trim().max(160).default(""), checkedAt:z.union([z.literal(""),z.iso.datetime()]).default(""), valueDate:z.union([z.literal(""),z.iso.date()]).default(""), legalRepName:z.string().trim().max(240).default(""), legalRepOab:z.string().trim().max(40).default(""), contactSource:z.string().trim().max(500).default(""), contactCheckedAt:z.union([z.literal(""),z.iso.datetime()]).default(""), precatoryYear:z.string().trim().max(4).default(""), epesNumber:z.string().trim().max(120).default(""), epesYear:z.string().trim().max(4).default(""), principalRequisitionOfficeNumber:z.string().trim().max(120).default(""), requisitionOfficeDate:z.union([z.literal(""),z.iso.date()]).default(""), originProcessNumber:z.string().trim().max(100).default(""), requisitionProcessNumber:z.string().trim().max(100).default(""), chronologicalOrderNumber:z.string().trim().max(120).default(""), depreReference:z.string().trim().max(160).default(""), depreReferenceSource:z.string().trim().max(500).default(""), qualityOffices:z.array(officeSlotSchema).max(10).default([]), acquisitionProfileVersion:z.string().trim().max(40).default("1.0") }).strict(),
   creditorResolution:z.object({state:z.enum(["PENDENTE","CREDOR_IDENTIFICADO","CREDOR_CORROBORADO","CREDOR_PARCIALMENTE_IDENTIFICADO","CREDOR_NÃO_IDENTIFICADO","POSSÍVEL_CORRESPONDÊNCIA","CONFLITO_DE_IDENTIDADE","REVISÃO_HUMANA","FONTE_INDISPONÍVEL"]).default("PENDENTE"),confidence:z.enum(["ALTA","MÉDIA","BAIXA","NÃO DETERMINADA"]).default("NÃO DETERMINADA"),currentHolderStatus:z.enum(["CURRENT_HOLDER_CONFIRMED","CURRENT_HOLDER_NOT_CONFIRMED","POSSIBLE_TRANSFER","SUCCESSION_REVIEW","UNKNOWN"]).default("CURRENT_HOLDER_NOT_CONFIRMED"),identifiedName:z.string().trim().max(240).default(""),explanation:z.string().trim().max(2000).default("Nenhuma consulta de identidade foi realizada."),nextAction:z.string().trim().max(500).default("Resolver identidade do credor em fonte oficial."),updatedAt:z.union([z.literal(""),z.iso.datetime()]).default("")}).default({state:"PENDENTE",confidence:"NÃO DETERMINADA",currentHolderStatus:"CURRENT_HOLDER_NOT_CONFIRMED",identifiedName:"",explanation:"Nenhuma consulta de identidade foi realizada.",nextAction:"Resolver identidade do credor em fonte oficial.",updatedAt:""}),
   nextAction: z.object({ title: short, dueAt: z.union([z.literal(""), z.iso.date(), z.iso.datetime()]), status: z.enum(["PENDING", "DONE", "BLOCKED"]), owner:short.optional(), reason:z.string().trim().max(1000).optional() }).strict(),
@@ -106,7 +133,7 @@ export function createDefaultWorkflow(nominal = 0): OperationalWorkflow {
   return {
     inventory: inventoryMetadataSchema.parse({}),
     stage: "NEW", priority: "MEDIUM", confidence: 0,
-    client: { name: "", document: "", phone: "", email: "" },
+    client: { name: "", document: "", phone: "", email: "", beneficiaries: [] },
     credit: { precatoryNumber: "", numeroProcessoDEPRE:"", numeroProcessoDEPRENormalizado:"", paymentOrderNumber:"", nature: "", grossAmount: nominal, availableEstimate: 0, creditType:"PRECATORY", municipality:"", issuingCourt:"", debtorState:"SP", sourceUrl:"", sourceName:"", checkedAt:"", valueDate:"", legalRepName:"", legalRepOab:"", contactSource:"", contactCheckedAt:"",precatoryYear:"",epesNumber:"",epesYear:"",principalRequisitionOfficeNumber:"",requisitionOfficeDate:"",originProcessNumber:"",requisitionProcessNumber:"",chronologicalOrderNumber:"",depreReference:"",depreReferenceSource:"",qualityOffices:[{id:crypto.randomUUID(),label:"Ofício 1",category:"OFICIO_EMPRESA",requiredForQualification:true,status:"PENDENTE",documentId:"",source:"",receivedAt:"",reviewedAt:"",reviewer:"",discrepancyStatus:"NONE",notes:""},{id:crypto.randomUUID(),label:"Ofício 2",category:"OFICIO_EMPRESA",requiredForQualification:true,status:"PENDENTE",documentId:"",source:"",receivedAt:"",reviewedAt:"",reviewer:"",discrepancyStatus:"NONE",notes:""}],acquisitionProfileVersion:"1.0" },
     creditorResolution:{state:"PENDENTE",confidence:"NÃO DETERMINADA",currentHolderStatus:"CURRENT_HOLDER_NOT_CONFIRMED",identifiedName:"",explanation:"Nenhuma consulta de identidade foi realizada.",nextAction:"Resolver identidade do credor em fonte oficial.",updatedAt:""},
     nextAction: { title: "Qualificar dados iniciais", dueAt: "", status: "PENDING" },

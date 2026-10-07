@@ -277,6 +277,7 @@ function populateDemoWorkflow(workflow: OperationalWorkflow, now: string) {
     document: "DEMO-SEM-CPF",
     phone: "(00) 00000-0000",
     email: "demo@exemplo.invalid",
+    beneficiaries: [],
   };
   workflow.credit = {
     ...workflow.credit,

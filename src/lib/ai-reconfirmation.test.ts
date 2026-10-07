@@ -17,7 +17,7 @@ import {
   type ReconfirmationModelOutput,
 } from "./ai-reconfirmation";
 import { createDefaultWorkflow } from "./operational-workflow";
-import { createOperation } from "./operations";
+import { createOperation, updateOperation } from "./operations";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -139,6 +139,7 @@ describe("AI reconfirmation evidence traceability", () => {
     expect(prompt.system).toContain("manualBaseReferences");
     expect(prompt.system).toContain("Na evidência oficial vinculada");
     expect(prompt.system).toContain("não infira relação jurídica");
+    expect(prompt.system).toContain("role=TITULAR e status=CURRENT_CONFIRMED");
     db.close();
   });
 
@@ -163,6 +164,114 @@ describe("AI reconfirmation evidence traceability", () => {
     expect(attempt?.fieldResults).toHaveLength(12);
     expect(attempt?.fieldResults.find(field => field.field === "titular")).toMatchObject({ status: "NÃO_CONFIRMADO", observedValue: null, evidenceIds: [fixture.evidence.id] });
     db.close();
+  });
+
+  it("rejects AI titular confirmation unless the deterministic workflow marks a current titular", async () => {
+    const db = createClient({ url: ":memory:" });
+    const fixture = await makeFixture(db);
+    const output = modelOutputWith({ titular: {
+      observedValue: "Titular Fixture",
+      status: "CONFIRMADO",
+      confidence: 95,
+      sourceTokens: ["EVIDENCE-1"],
+      observation: "A evidência oficial vinculada menciona Titular Fixture.",
+    } });
+
+    const attempt = await executeModelOutput(fixture, db, output);
+
+    expect(attempt).toMatchObject({
+      status: "FAILED",
+      error: "RECONFIRMATION_CURRENT_TITULAR_CONFIRMATION_REQUIRED",
+      fieldResults: [],
+    });
+    const operation = await db.execute({ sql: "SELECT workflow FROM operations WHERE id=? AND organization_id=?", args: [fixture.operation.id, fixture.organizationId] });
+    expect(JSON.parse(String(operation.rows[0].workflow)).client.beneficiaries).toHaveLength(0);
+    await db.close();
+  });
+
+  it("rejects a direct persistence caller that bypasses model-output validation", async () => {
+    const db = createClient({ url: ":memory:" });
+    const fixture = await makeFixture(db);
+    const attempt = await startRun(fixture, db);
+
+    await expect(completeAiReconfirmation({
+      organizationId: fixture.organizationId,
+      operationId: fixture.operation.id,
+      runId: attempt!.id,
+      actorUserId: "fixture-owner",
+      client: db,
+      completion: {
+        status: "COMPLETED",
+        overallStatus: "RECONFIRMADO",
+        confidence: 95,
+        summary: "Fixture de tentativa de bypass.",
+        fieldResults: [fieldResult({
+          field: "titular",
+          originalValue: "Titular Fixture",
+          observedValue: "Titular Fixture",
+          status: "CONFIRMADO",
+          confidence: 95,
+          evidenceIds: [fixture.evidence.id],
+        })],
+      },
+    })).rejects.toThrow("RECONFIRMATION_CURRENT_TITULAR_CONFIRMATION_REQUIRED");
+
+    expect((await db.execute({ sql: "SELECT COUNT(*) n FROM ai_reconfirmation_field_results WHERE run_id=?", args: [attempt!.id] })).rows[0].n).toBe(0);
+    await db.close();
+  });
+
+  it("accepts titular reconfirmation only for the persisted current holder and its verified strong evidence", async () => {
+    const db = createClient({ url: ":memory:" });
+    const fixture = await makeFixture(db);
+    await db.execute({ sql: "UPDATE official_evidence_documents SET status='VERIFIED',evidence_strength='STRONG' WHERE id=? AND organization_id=?", args: [fixture.evidence.id, fixture.organizationId] });
+    const currentObservation = {
+      id: crypto.randomUUID(),
+      depre: "0038850-88.2017.8.26.0500",
+      name: "Titular Fixture",
+      role: "TITULAR" as const,
+      status: "CURRENT_CONFIRMED" as const,
+      source: "TJSP",
+      sourceUrl: "https://www.tjsp.jus.br/consulta-fixture",
+      sourceType: "OFFICIAL_REGISTER" as const,
+      provider: "TJSP_PUBLIC_API",
+      sourceId: "tjsp-processual",
+      route: "cpopg",
+      sourceStatus: "SUCCESS" as const,
+      documentIdentifier: "DOC-FIXTURE-001",
+      reference: "REF-FIXTURE-001",
+      collectedAt: new Date().toISOString(),
+      evidenceId: fixture.evidence.id,
+      evidenceStrength: "STRONG" as const,
+      lawyerName: "",
+      lawyerOab: "",
+      lawyerSource: "",
+      lawyerSourceUrl: "",
+      lawyerSourceStatus: "" as const,
+      context: "CURRENT_CONFIRMED fixture-only observation.",
+    };
+    await updateOperation({
+      ...fixture.operation,
+      workflow: {
+        ...fixture.operation.workflow,
+        client: { ...fixture.operation.workflow.client, beneficiaries: [currentObservation] },
+      },
+    }, db, fixture.organizationId, "fixture-owner");
+    const output = modelOutputWith({ titular: {
+      observedValue: "Titular Fixture",
+      status: "CONFIRMADO",
+      confidence: 95,
+      sourceTokens: ["EVIDENCE-1"],
+      observation: "A evidência oficial vinculada corresponde ao titular atual já confirmado no workflow.",
+    } });
+
+    const attempt = await executeModelOutput(fixture, db, output);
+
+    expect(attempt).toMatchObject({ status: "COMPLETED", overallStatus: "PARCIAL" });
+    expect(attempt?.fieldResults.find((field) => field.field === "titular")).toMatchObject({
+      status: "CONFIRMADO",
+      evidenceIds: [fixture.evidence.id],
+    });
+    await db.close();
   });
 
   it("fails semantic validation when an official-evidence observation omits its ID", async () => {
@@ -223,15 +332,16 @@ describe("AI reconfirmation evidence traceability", () => {
   it.each(["DIVERGENTE", "ATUALIZADO"] as const)("preserva as regras semânticas existentes para %s", async status => {
     const db = createClient({ url: ":memory:" });
     const fixture = await makeFixture(db);
-    const attempt = await executeModelOutput(fixture, db, modelOutputWith({ titular: {
-      observedValue: "Nome explicitamente apresentado na evidência",
+    const field = status === "ATUALIZADO" ? "valor" : "titular";
+    const attempt = await executeModelOutput(fixture, db, modelOutputWith({ [field]: {
+      observedValue: status === "ATUALIZADO" ? 210000 : "Nome explicitamente apresentado na evidência",
       status,
       confidence: 80,
       sourceTokens: ["EVIDENCE-1"],
       observation: "A evidência oficial vinculada apresenta um nome diferente do valor original.",
     } }));
     expect(attempt).toMatchObject({ status: "COMPLETED" });
-    expect(attempt?.fieldResults.find(field => field.field === "titular")?.status).toBe(status);
+    expect(attempt?.fieldResults.find(result => result.field === field)?.status).toBe(status);
     db.close();
   });
 });
@@ -415,12 +525,12 @@ describe("AI reconfirmation persistence", () => {
       expect(prompt).toContain(fixture.evidence.id);
       expect(prompt).not.toContain(failedEvidence.id);
       return {
-        summary: "DEPRE e titular confirmados; demais campos sem suporte.",
+        summary: "DEPRE confirmado; demais campos sem suporte.",
         fields: reconfirmationFieldNames.map((field) => {
-          const confirmed = field === "numeroProcessoDEPRE" || field === "titular";
+          const confirmed = field === "numeroProcessoDEPRE";
           const originalValue = field === "numeroProcessoDEPRE"
             ? "0038850-88.2017.8.26.0500"
-            : field === "titular" ? "Titular Fixture" : null;
+            : null;
           return {
             field,
             observedValue: confirmed ? originalValue : null,
@@ -443,8 +553,8 @@ describe("AI reconfirmation persistence", () => {
     expect(generate).toHaveBeenCalledTimes(1);
     expect(attempt).toMatchObject({ status: "COMPLETED", overallStatus: "PARCIAL", officialEvidenceReferences: [expect.objectContaining({ id: fixture.evidence.id })] });
     expect(attempt?.fieldResults).toHaveLength(reconfirmationFieldNames.length);
-    expect(attempt?.fieldResults.filter((item) => item.status === "CONFIRMADO").map(item => item.field).toSorted()).toEqual(["numeroProcessoDEPRE", "titular"]);
-    expect(attempt?.fieldResults.filter((item) => item.status === "NÃO_CONFIRMADO")).toHaveLength(reconfirmationFieldNames.length - 2);
+    expect(attempt?.fieldResults.filter((item) => item.status === "CONFIRMADO").map(item => item.field).toSorted()).toEqual(["numeroProcessoDEPRE"]);
+    expect(attempt?.fieldResults.filter((item) => item.status === "NÃO_CONFIRMADO")).toHaveLength(reconfirmationFieldNames.length - 1);
     db.close();
   });
 

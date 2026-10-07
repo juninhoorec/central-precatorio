@@ -8,6 +8,8 @@ const migrations = [
   { version: "002_crm_automation_integrity", path: "002_crm_automation_integrity.sql" },
   { version: "003_crm_operation_tenant_guard", path: "003_crm_operation_tenant_guard.sql" },
   { version: "004_relation_tenant_update_guards", path: "004_relation_tenant_update_guards.sql" },
+  { version: "005_opportunity_evaluations", path: "005_opportunity_evaluations.sql" },
+  { version: "006_manual_research_tasks", path: "006_manual_research_tasks.sql" },
 ] as const;
 const migrationsDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "../../migrations");
 

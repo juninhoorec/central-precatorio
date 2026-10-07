@@ -11,12 +11,16 @@ export type DocumentStatus=(typeof documentStatuses)[number];
 export const documentMetadataSchema=z.object({id:z.string().uuid(),operationId:z.string().uuid(),organizationId:z.string(),name:z.string(),hash:z.string().length(64),size:z.number().int().nonnegative(),mime:z.literal("application/pdf"),status:z.enum(documentStatuses),scanStatus:z.enum(scanStatuses),category:z.enum(documentCategories),version:z.number().int().positive(),reviewerNotes:z.string(),retentionUntil:z.string(),createdBy:z.string(),createdAt:z.string(),updatedAt:z.string()});
 export type DocumentMetadata=z.infer<typeof documentMetadataSchema>;
 
+const initializedClients = new WeakSet<Client>();
+
 export async function initializeDocumentStorage(client:Client=db){
+  if (initializedClients.has(client)) return;
   await client.execute("CREATE TABLE IF NOT EXISTS operation_documents (id TEXT PRIMARY KEY,operation_id TEXT NOT NULL,name TEXT NOT NULL,hash TEXT NOT NULL,content BLOB NOT NULL,created_at TEXT NOT NULL,organization_id TEXT NOT NULL DEFAULT 'legacy-internal')");
   const cols=await client.execute("PRAGMA table_info(operation_documents)"); const add=async(name:string,sql:string)=>{if(!cols.rows.some(r=>r.name===name))try{await client.execute(`ALTER TABLE operation_documents ADD COLUMN ${sql}`)}catch{const current=await client.execute("PRAGMA table_info(operation_documents)");if(!current.rows.some(r=>r.name===name))throw new Error(`Falha ao migrar documento: ${name}`)}};
   await add("size","size INTEGER NOT NULL DEFAULT 0");await add("mime","mime TEXT NOT NULL DEFAULT 'application/pdf'");await add("status","status TEXT NOT NULL DEFAULT 'UPLOADED'");await add("scan_status","scan_status TEXT NOT NULL DEFAULT 'NOT_SCANNED'");await add("category","category TEXT NOT NULL DEFAULT 'OUTRO'");await add("version","version INTEGER NOT NULL DEFAULT 1");await add("reviewer_notes","reviewer_notes TEXT NOT NULL DEFAULT ''");await add("retention_until","retention_until TEXT NOT NULL DEFAULT ''");await add("created_by","created_by TEXT NOT NULL DEFAULT 'legacy'");await add("updated_at","updated_at TEXT NOT NULL DEFAULT ''");
   await client.execute("CREATE INDEX IF NOT EXISTS operation_documents_organization_idx ON operation_documents(organization_id,operation_id,created_at DESC)");
   await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS operation_documents_hash_idx ON operation_documents(organization_id,operation_id,hash)");
+  initializedClients.add(client);
 }
 
 function metadata(row:Record<string,unknown>):DocumentMetadata{return documentMetadataSchema.parse({id:String(row.id),operationId:String(row.operation_id),organizationId:String(row.organization_id),name:String(row.name),hash:String(row.hash),size:Number(row.size||0),mime:String(row.mime||"application/pdf"),status:String(row.status||"UPLOADED"),scanStatus:String(row.scan_status||"NOT_SCANNED"),category:String(row.category||"OUTRO"),version:Number(row.version||1),reviewerNotes:String(row.reviewer_notes||""),retentionUntil:String(row.retention_until||""),createdBy:String(row.created_by||"legacy"),createdAt:String(row.created_at),updatedAt:String(row.updated_at||row.created_at)});}

@@ -441,6 +441,7 @@ describe("permitted acquisition source adapters", () => {
 
   it("accepts only HTTPS URLs on built-in or configured official domains", () => {
     expect(isOfficialSourceUrl("https://esaj.tjsp.jus.br/consulta")).toBe(true);
+    expect(isOfficialSourceUrl("https://cna.oab.org.br/")).toBe(true);
     expect(isOfficialSourceUrl("http://www.tjsp.jus.br/consulta")).toBe(false);
     expect(
       isOfficialSourceUrl("https://www.tjsp.jus.br.evil.example/consulta"),

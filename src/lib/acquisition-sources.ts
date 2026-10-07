@@ -139,6 +139,7 @@ const BUILT_IN_OFFICIAL_DOMAINS = [
   "campinas.sp.gov.br",
   "guarulhos.sp.gov.br",
   "prefeitura.sp.gov.br",
+  "oab.org.br",
 ];
 
 export function normalizeCnjProcessNumber(value: string) {

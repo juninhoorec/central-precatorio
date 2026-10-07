@@ -245,6 +245,34 @@ function equivalentObservedValue(original: unknown, observed: unknown) {
   return JSON.stringify(comparableValue(original ?? null)) === JSON.stringify(comparableValue(observed ?? null));
 }
 
+function assertCurrentTitularAttribution(input: {
+  operation: Operation;
+  field: ReconfirmationFieldResult["field"];
+  status: ReconfirmationFieldResult["status"];
+  observedValue: unknown;
+  evidenceIds: readonly string[];
+  evidenceReferences: readonly { id: string; status: string; evidenceStrength: string }[];
+}) {
+  if (input.field !== "titular" || !["CONFIRMADO", "ATUALIZADO"].includes(input.status)) return;
+
+  const currentTitulares = input.operation.workflow.client.beneficiaries.filter((beneficiary) =>
+    beneficiary.role === "TITULAR" && beneficiary.status === "CURRENT_CONFIRMED",
+  );
+  const currentTitular = currentTitulares[0];
+  const supportedEvidence = currentTitulares.length === 1
+    && Boolean(currentTitular?.evidenceId)
+    && input.evidenceIds.includes(currentTitular.evidenceId)
+    && input.evidenceReferences.some((reference) =>
+      reference.id === currentTitular.evidenceId
+      && reference.status === "VERIFIED"
+      && reference.evidenceStrength === "STRONG",
+    );
+
+  if (!supportedEvidence || !equivalentObservedValue(currentTitular?.name, input.observedValue)) {
+    throw new Error("RECONFIRMATION_CURRENT_TITULAR_CONFIRMATION_REQUIRED");
+  }
+}
+
 function normalizedObservation(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
@@ -568,6 +596,7 @@ export function buildAiReconfirmationPrompt(attempt: AiReconfirmationAttempt, do
     "Se uma observation afirmar conteúdo presente ou ausente em uma officialEvidence ou documento, sourceTokens deve conter o token dessa fonte (ex: EVIDENCE-1, DOC-1). Nunca associe um token a uma afirmação derivada apenas de manualBaseReferences ou do snapshot.",
     evidenceIdGuidance,
     "Limite cada observation à fonte examinada. Prefira 'Na evidência oficial [TOKEN], não foi identificado X' a afirmações amplas como 'nenhuma fonte oficial do pacote informa X', salvo quando todas as fontes do pacote tiverem sido verificadas e citadas.",
+    "Para titular, CONFIRMADO ou ATUALIZADO só são permitidos quando o snapshot já contém exatamente um beneficiário role=TITULAR e status=CURRENT_CONFIRMED, o nome observado coincide exatamente após normalização e a evidência vinculada está VERIFIED + STRONG. Menção histórica, credor provisório, candidato, advogado ou papel de parte não confirma titularidade atual.",
     "Afirmações exclusivamente sobre o snapshot devem ser identificadas como tal e não precisam de sourceTokens. Nunca invente fontes, IDs, tokens, URLs, valores, datas, CPF/CNPJ, advogado, OAB ou contatos.",
     "Para cada campo listado em originalFields, retorne exatamente um resultado. Sem suporte direto, status NÃO_CONFIRMADO, observedValue null e confidence null.",
     "CONFIRMADO exige fonte vinculada que sustente valor semanticamente igual ao original. DIVERGENTE exige fonte explícita com valor incompatível. ATUALIZADO exige fonte oficial explícita com atualização real; diferenças apenas de grafia/formatação não são atualização.",
@@ -617,6 +646,7 @@ function validateModelFieldResults(attempt: AiReconfirmationAttempt, output: Rec
     }
 
     if (item.status === "NÃO_CONFIRMADO" && item.observedValue !== null) throw new Error(`RECONFIRMATION_UNSUPPORTED_OBSERVATION:${item.field}`);
+    assertCurrentTitularAttribution({ operation: attempt.originalSnapshot, field: item.field, status: item.status, observedValue: item.observedValue, evidenceIds, evidenceReferences: attempt.officialEvidenceReferences });
     if (item.status === "CONFIRMADO" && (!evidenceIds.length && !documentIds.length || !equivalentObservedValue(originalValue, item.observedValue))) throw new Error(`RECONFIRMATION_UNSUPPORTED_CONFIRMATION:${item.field}`);
     if ((item.status === "DIVERGENTE" || item.status === "ATUALIZADO") && ((!evidenceIds.length && !documentIds.length) || item.observedValue === null || equivalentObservedValue(originalValue, item.observedValue))) throw new Error(`RECONFIRMATION_UNSUPPORTED_CHANGE:${item.field}`);
     if (observationReferencesOnlyManualSource(item.observation) && evidenceIds.length) throw new Error(`RECONFIRMATION_MANUAL_EVIDENCE_REFERENCE_MISMATCH:${item.field}`);
@@ -737,7 +767,7 @@ export async function completeAiReconfirmation(input: {
     const run = selected.rows[0];
     if (String(run.status) !== "RUNNING") throw new Error("RECONFIRMATION_RUN_NOT_RUNNING");
     const originalSnapshot = JSON.parse(String(run.original_snapshot_json)) as Operation;
-    const evidenceRefs = JSON.parse(String(run.evidence_refs_json)) as { id: string }[];
+    const evidenceRefs = JSON.parse(String(run.evidence_refs_json)) as { id: string; status: string; evidenceStrength: string }[];
     const documentRefs = JSON.parse(String(run.document_refs_json)) as { id: string }[];
     const allowedEvidenceIds = new Set(evidenceRefs.map((item) => item.id));
     const allowedDocumentIds = new Set(documentRefs.map((item) => item.id));
@@ -749,6 +779,7 @@ export async function completeAiReconfirmation(input: {
         if (!sameSnapshotValue(field.originalValue, originalValueForField(originalSnapshot, field.field))) throw new Error("RECONFIRMATION_ORIGINAL_VALUE_MISMATCH");
         if (field.evidenceIds.some((id) => !allowedEvidenceIds.has(id))) throw new Error("RECONFIRMATION_EVIDENCE_REFERENCE_MISMATCH");
         if (field.documentIds.some((id) => !allowedDocumentIds.has(id))) throw new Error("RECONFIRMATION_DOCUMENT_REFERENCE_MISMATCH");
+        assertCurrentTitularAttribution({ operation: originalSnapshot, field: field.field, status: field.status, observedValue: field.observedValue, evidenceIds: field.evidenceIds, evidenceReferences: evidenceRefs });
       }
       const completedAt = new Date().toISOString();
       await tx.execute({

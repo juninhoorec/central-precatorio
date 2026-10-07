@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local-only research/validation artifacts should not block the shipped product.
     ".local-data/**",
+    "tmp_*.js",
     "scripts/cp-real-corpus-ingest.mts",
     "test-results/**",
     "playwright-report/**",
