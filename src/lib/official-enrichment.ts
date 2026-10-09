@@ -11,8 +11,9 @@ import { persistOpportunityEvaluation } from "./opportunity-evaluations";
 import { adaptDjenResult } from "./source-adapters";
 import { type ContactStatus } from "./contact-enrichment";
 import { getOperation } from "./operations";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const db = createDatabaseClient();
 
 const object = (value: unknown): Record<string, unknown> => (value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {});
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -271,14 +272,23 @@ export async function executePhase5EnrichmentForCase(
   const oab = text(credit.legalRepOab);
 
   const beneficiaries = Array.isArray(operation.workflow.client.beneficiaries) ? operation.workflow.client.beneficiaries.map(object) : [];
-  const titularStatus = deriveTitularStatusFromBeneficiaries(beneficiaries.map((b) => ({ role: text(b.role), status: text(b.status) })));
+  const verifiedEvidenceIds = new Set(currentEvidence.filter((item) => item.status === "VERIFIED" && item.evidenceStrength === "STRONG").map((item) => item.id));
+  const titularStatus = deriveTitularStatusFromBeneficiaries(beneficiaries.map((b) => ({
+    role: text(b.role),
+    status: text(b.status) === "CURRENT_CONFIRMED"
+      && text(b.evidenceStrength) === "STRONG"
+      && verifiedEvidenceIds.has(text(b.evidenceId))
+      && ["OFFICIAL_PUBLICATION", "OFFICIAL_API", "OFFICIAL_REGISTER"].includes(text(b.sourceType))
+      ? "CURRENT_CONFIRMED"
+      : "UNVERIFIED_IMPORT",
+  })));
   const contactAvailable = Boolean(operation.workflow.client.phone || operation.workflow.client.email);
-  const contactStatus: ContactStatus = text(credit.contactSource) ? "PROFESSIONAL_ROUTE" : contactAvailable ? "CONFIRMED" : "NOT_CONFIRMED";
+  const contactStatus: ContactStatus = "NOT_CONFIRMED";
 
   const processNumber = text(credit.originProcessNumber) || text(credit.requisitionProcessNumber) || text(operation.process);
-  const processStatus = processNumber ? "CONFIRMED" : "PENDING";
-  const lawyerStatus = lawyer && oab ? "CONFIRMED" : lawyer ? "UNCONFIRMED" : "MISSING";
-  const valueStatus = value > 0 ? "CONFIRMED" : "MISSING";
+  const processStatus = processNumber ? "PENDING" : "MISSING";
+  const lawyerStatus = lawyer || oab ? "UNCONFIRMED" : "MISSING";
+  const valueStatus = value > 0 ? "UNCONFIRMED" : "MISSING";
 
   // Score opportunity using canonical opportunity engine
   const scoreResult = scoreOpportunity({

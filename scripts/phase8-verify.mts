@@ -32,9 +32,11 @@ async function verify() {
   
   // Pilot DEPREs are those that have manual tasks
   const pilotDepresWithTasks = [...new Set(manualTasks.map(t => String(t.depre)))];
-  const pilotOperations = pilotOps.filter(op => {
-    const wf = op.workflow as any;
-    return pilotDepresWithTasks.includes(wf.credit?.numeroProcessoDEPRE);
+  const pilotOperations = pilotOps.filter((op) => {
+    const wf = op.workflow as Record<string, unknown> | null;
+    const credit = (wf && typeof wf === "object" ? wf.credit : undefined) as Record<string, unknown> | undefined;
+    const depre = typeof credit?.numeroProcessoDEPRE === "string" ? credit.numeroProcessoDEPRE : undefined;
+    return depre !== undefined && pilotDepresWithTasks.includes(depre);
   });
 
   console.log(`Global Operations: ${allOps.length} (73 real, 1 demo expected)`);
@@ -43,11 +45,21 @@ async function verify() {
 
   let count0 = 0, count1 = 0, count2 = 0;
   
-  const matrix: any[] = [];
+  const matrix: Array<{
+    depre: string | undefined;
+    hasAcquisitionEvent: boolean;
+    hasKnownIdentifiers: boolean;
+    taskCount: number;
+    docCount: number;
+    verified2of2: number;
+    evalStatus: string;
+    blockers: unknown;
+  }> = [];
 
   for (const op of pilotOperations) {
-    const wf = op.workflow as any;
-    const depre = wf.credit?.numeroProcessoDEPRE;
+    const wf = op.workflow as Record<string, unknown> | null;
+    const credit = (wf && typeof wf === "object" ? wf.credit : undefined) as Record<string, unknown> | undefined;
+    const depre = typeof credit?.numeroProcessoDEPRE === "string" ? credit.numeroProcessoDEPRE : undefined;
     
     // Acquisition Events
     const events = await listSourceBlockerEvents(op.id, ORGANIZATION_ID, db);
@@ -78,6 +90,9 @@ async function verify() {
       args: [op.id, ORGANIZATION_ID]
     });
     const lastEval = evals.rows[0];
+    const evalStatus = typeof lastEval?.qualification_status === "string"
+      ? lastEval.qualification_status
+      : "NO_EVAL";
 
     matrix.push({
       depre,
@@ -86,7 +101,7 @@ async function verify() {
       taskCount: opTasks.length,
       docCount: docs.length,
       verified2of2: verifiedCount,
-      evalStatus: lastEval?.qualification_status || "NO_EVAL",
+      evalStatus,
       blockers: lastEval?.blocker_codes || "NONE"
     });
   }

@@ -3,8 +3,9 @@ import { createClient, type Client } from "@libsql/client";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { getOperation, type Operation } from "@/lib/operations";
 import { documentStorage, type StorageAdapter } from "@/lib/document-storage";
+import { createDatabaseClient } from "./database-config";
 
-const db=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+const db=createDatabaseClient();
 type ExtractedField={field:string;value:string;page:number;confidence:number;method:string};
 export type PdfAnalysis={id:string;documentId:string;organizationId:string;operationId:string;status:"TEXT_EXTRACTED"|"NO_TEXT"|"FAILED";pages:number;extractedAt:string;fields:ExtractedField[];matchStatus:"MATCH"|"PARTIAL_MATCH"|"CONFLICT"|"INSUFFICIENT_DATA";matchReason:string;autoCategory:string};
 async function initialize(client:Client=db){const statements=[`CREATE TABLE IF NOT EXISTS document_analyses(id TEXT PRIMARY KEY,organization_id TEXT NOT NULL,operation_id TEXT NOT NULL,document_id TEXT NOT NULL UNIQUE,status TEXT NOT NULL,pages INTEGER NOT NULL,extracted_at TEXT NOT NULL,fields_json TEXT NOT NULL,match_status TEXT NOT NULL,match_reason TEXT NOT NULL,auto_category TEXT NOT NULL)`,"CREATE INDEX IF NOT EXISTS document_analysis_org_idx ON document_analyses(organization_id,operation_id)"];for(let attempt=0;;attempt++){try{await client.batch(statements,"write");return}catch(error){const code=typeof error==="object"&&error!==null&&"code"in error?String(error.code):"";if(code!=="SQLITE_BUSY"||attempt>=4)throw error;await new Promise(resolve=>setTimeout(resolve,25*(attempt+1)))}}}

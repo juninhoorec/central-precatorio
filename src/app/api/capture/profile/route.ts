@@ -4,8 +4,9 @@ import {z} from "zod";
 import {requireTenantPermission} from "@/lib/tenant";
 import {appendAudit} from "@/lib/audit";
 import {defaultAcquisitionProfile} from "@/lib/lead-qualification";
+import {createDatabaseClient} from "@/lib/database-config";
 export const runtime="nodejs";
-const db=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+const db=createDatabaseClient();
 const schema=z.object({minimumPrecatory:z.number().finite().nonnegative().max(1_000_000_000_000),minimumOfficialEvidence:z.number().int().min(2).max(10).default(2),state:z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).default("SP"),tribunal:z.string().trim().min(2).max(40).default("TJSP"),officeLabels:z.tuple([z.string().trim().min(1).max(120),z.string().trim().min(1).max(120)]),freshDays:z.number().int().min(1).max(365),recentDays:z.number().int().min(1).max(730)}).strict();
 async function init(){await db.execute("CREATE TABLE IF NOT EXISTS acquisition_profiles (organization_id TEXT PRIMARY KEY, profile_json TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL)")}
 export async function GET(request:Request){try{const t=await requireTenantPermission(request.headers,"operation:read");await init();const r=await db.execute({sql:"SELECT profile_json,version,updated_at FROM acquisition_profiles WHERE organization_id=?",args:[t.organizationId]});if(!r.rows[0])return NextResponse.json({profile:defaultAcquisitionProfile});const profile={...defaultAcquisitionProfile,...JSON.parse(String(r.rows[0].profile_json)),version:String(r.rows[0].version)};return NextResponse.json({profile,updatedAt:String(r.rows[0].updated_at)},{headers:{"cache-control":"no-store"}})}catch(e){if(e instanceof Response)return e;return NextResponse.json({error:"Não foi possível carregar os critérios."},{status:500})}}

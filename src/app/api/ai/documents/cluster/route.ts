@@ -6,13 +6,20 @@ import { documentStorage } from "@/lib/document-storage";
 import { extractPdfText } from "@/lib/pdf-analysis";
 import { getOperation } from "@/lib/operations";
 import { requireTenantPermission } from "@/lib/tenant";
+import { rateLimit } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/request-validation";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const tenant = await requireTenantPermission(req.headers, "document:read");
-    const body = z.object({ operationId: z.string().uuid() }).strict().safeParse(await req.json());
+    if (!(await rateLimit(req, "ai-document-cluster", 10, 600, `${tenant.organizationId}:${tenant.userId}`))) {
+      return NextResponse.json({ error: "Limite de análises documentais atingido." }, { status: 429 });
+    }
+    const content = await readJsonBody(req, 2048);
+    if (!content.ok) return NextResponse.json({ error: content.reason === "too_large" ? "Payload excede o limite." : "JSON inválido." }, { status: content.reason === "too_large" ? 413 : 400 });
+    const body = z.object({ operationId: z.uuid() }).strict().safeParse(content.value);
 
     if (!body.success) {
       return NextResponse.json(
@@ -33,7 +40,7 @@ export async function POST(req: Request) {
     const docs = await documentStorage.list(operationId, tenant.organizationId);
     
     // Filter out ARCHIVED or REJECTED docs to only cross-analyze valid ones
-    const activeDocs = docs.filter(d => !["ARCHIVED", "REJECTED"].includes(d.status));
+    const activeDocs = docs.filter((d) => ["SAFE", "UPLOADED"].includes(d.status) && d.size <= 5_000_000).slice(0, 20);
 
     const documentsNotAnalyzed: string[] = [];
     const documentsData = await Promise.all(
@@ -78,10 +85,6 @@ export async function POST(req: Request) {
     return NextResponse.json(analysis, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error("Error in /api/ai/documents/cluster:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Não foi possível analisar os documentos." }, { status: 500 });
   }
 }

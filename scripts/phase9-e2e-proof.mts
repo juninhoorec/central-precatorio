@@ -8,7 +8,9 @@ import { randomUUID } from "node:crypto";
 const ORGANIZATION_ID = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u"; 
 
 async function run() {
-  const db = createClient({ url: "file:central-precatorios.db" });
+  const databaseUrl = process.env.CP_E2E_DATABASE_URL;
+  if (!databaseUrl || databaseUrl === "file:central-precatorios.db") throw new Error("E2E_REQUIRES_ISOLATED_DATABASE");
+  const db = createClient({ url: databaseUrl });
   
   console.log("==================================================================");
   console.log("PHASE 9 - ANALYST EVIDENCE INGESTION E2E PROOF");
@@ -138,8 +140,6 @@ async function run() {
   await db.execute({ sql: `DELETE FROM manual_research_tasks WHERE operation_id = ?`, args: [op.id] });
   await db.execute({ sql: `DELETE FROM opportunity_evaluations WHERE operation_id = ?`, args: [op.id] });
   await db.execute({ sql: `DELETE FROM official_evidence_documents WHERE operation_id = ?`, args: [op.id] });
-  await db.execute({ sql: `DELETE FROM audit_logs WHERE entity_id = ? OR (entity_type='manual_research_task' AND next_state_summary LIKE ?)`, args: [op.id, `%${task.id}%`] });
-
   console.log(`\nCleaned up synthetic records.`);
 }
 

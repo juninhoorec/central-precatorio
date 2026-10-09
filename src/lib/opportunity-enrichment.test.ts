@@ -214,6 +214,50 @@ describe("Opportunity Enrichment (Phase 8)", () => {
     expect(result.titularStatus).toBe("UNRESOLVED");
   });
 
+  it("does not trust a current-titular label without matching persisted official evidence", async () => {
+    const wf = createDefaultWorkflow(0);
+    wf.credit.numeroProcessoDEPRE = "5656565-56.5656.5.65.6565";
+    wf.client.beneficiaries = [{
+      id: crypto.randomUUID(),
+      depre: wf.credit.numeroProcessoDEPRE,
+      name: "Imported current holder",
+      role: "TITULAR",
+      status: "CURRENT_CONFIRMED",
+      source: "claimed official source",
+      sourceUrl: "https://www.tjsp.jus.br/",
+      sourceType: "OFFICIAL_REGISTER",
+      provider: "claimed-provider",
+      sourceId: "claimed-source",
+      route: "claimed-route",
+      sourceStatus: "SUCCESS",
+      documentIdentifier: "UNPERSISTED-DOCUMENT",
+      reference: "unverified-reference",
+      collectedAt: new Date().toISOString(),
+      evidenceId: crypto.randomUUID(),
+      evidenceStrength: "STRONG",
+      lawyerName: "",
+      lawyerOab: "",
+      lawyerSource: "",
+      lawyerSourceUrl: "",
+      lawyerSourceStatus: "",
+      context: "",
+    }];
+
+    const op = await createOperation({
+      title: "Forged titular status test",
+      debtor: "Município M",
+      tribunal: "TJSP",
+      process: "",
+      owner: "tester",
+      source: "Manual",
+      workflow: wf,
+    }, db, organizationId);
+
+    const result = await enrichOpportunityFromEvidence(op.id, organizationId, actorUserId, db);
+    expect(result.titularStatus).toBe("UNRESOLVED");
+    expect(result.blockers).toContain("TITULAR_NOT_CONFIRMED");
+  });
+
   it("should not confirm value when R$0 default", async () => {
     const wf = createDefaultWorkflow(0);
     wf.credit.numeroProcessoDEPRE = "6666666-66.6666.6.66.6666";
@@ -253,7 +297,7 @@ describe("Opportunity Enrichment (Phase 8)", () => {
     const result = await enrichOpportunityFromEvidence(op.id, organizationId, actorUserId, db);
     // DEPRE is the enrichment key, not the originating process
     expect(result.depre).toBe("7777777-77.7777.7.77.7777");
-    // Process is confirmed because originProcessNumber exists
-    expect(result.processStatus).toBe("CONFIRMED");
+    expect(result.processStatus).toBe("PENDING");
+    expect(result.valueStatus).toBe("UNCONFIRMED");
   });
 });

@@ -11,7 +11,9 @@ import { appendAudit } from "../src/lib/audit";
 const ORGANIZATION_ID = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u"; 
 
 async function run() {
-  const db = createClient({ url: "file:central-precatorios.db" });
+  const databaseUrl = process.env.CP_E2E_DATABASE_URL;
+  if (!databaseUrl || databaseUrl === "file:central-precatorios.db") throw new Error("E2E_REQUIRES_ISOLATED_DATABASE");
+  const db = createClient({ url: databaseUrl });
   
   console.log("==================================================================");
   console.log("PHASE 10 - E2E ANALYST COCKPIT & SUCCESS PATH (CF-10-01, 10-07)");
@@ -191,8 +193,9 @@ async function run() {
       documentType: "OFICIO_REQUISITORIO"
     }, db);
     console.log(`    ERROR: Should have been rejected!`);
-  } catch (e: any) {
-    console.log(`    Correctly rejected: ${e.message}`);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.log(`    Correctly rejected: ${message}`);
   }
   // Verify doc count didn't inflate
   const finalDocs = await listOfficialEvidence(op.id, ORGANIZATION_ID, db);
@@ -206,7 +209,6 @@ async function run() {
   await db.execute({ sql: `DELETE FROM manual_research_tasks WHERE operation_id = ?`, args: [op.id] });
   await db.execute({ sql: `DELETE FROM opportunity_evaluations WHERE operation_id = ?`, args: [op.id] });
   await db.execute({ sql: `DELETE FROM official_evidence_documents WHERE operation_id = ?`, args: [op.id] });
-  await db.execute({ sql: `DELETE FROM audit_logs WHERE entity_id = ? OR (entity_type='manual_research_task' AND next_state_summary LIKE ?)`, args: [op.id, `%${task.id}%`] });
   await db.execute({ sql: `DELETE FROM acquisition_events WHERE operation_id = ?`, args: [op.id] });
 
   console.log(`\n[9] Cleaned up synthetic records.`);

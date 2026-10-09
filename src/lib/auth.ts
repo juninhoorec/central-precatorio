@@ -3,6 +3,7 @@ import { betterAuth, APIError } from "better-auth";
 import { organization, twoFactor } from "better-auth/plugins";
 import { deliverAuthMail } from "./auth-mail";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
+import { databaseConfigForDialect } from "./database-config";
 
 const production = process.env.NODE_ENV === "production";
 const configuredSecret = process.env.BETTER_AUTH_SECRET;
@@ -22,7 +23,7 @@ export const auth = betterAuth({
   secret,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
   database: {
-    dialect: new LibsqlDialect({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN }),
+    dialect: new LibsqlDialect(databaseConfigForDialect()),
     type: "sqlite",
   },
   emailAndPassword: { enabled: true, minPasswordLength: 12, maxPasswordLength: 128, requireEmailVerification: production, sendResetPassword: async ({user,url})=>deliverAuthMail({to:user.email,url,kind:"RESET_PASSWORD"}), resetPasswordTokenExpiresIn: 60*30 },

@@ -1,5 +1,5 @@
 import { type Client } from "@libsql/client";
-import { buildEvidenceCandidates, resolveEvidenceCandidatesForAcquisition } from "./research-pipeline";
+import { resolveEvidenceCandidatesForAcquisition, type SourceAcquisitionResult } from "./research-pipeline";
 import { listOfficialEvidence } from "./autonomous-acquisition";
 import type { SubmitManualEvidenceInput } from "./manual-research";
 
@@ -7,11 +7,53 @@ export async function previewManualEvidence(
   input: SubmitManualEvidenceInput,
   client: Client
 ): Promise<{ isDuplicate: boolean; duplicateOf: string | null }> {
-  // Create candidate
-  const acquisitionResult = {
+  const acquisitionResult: SourceAcquisitionResult = {
     provider: "ANALYST_ASSISTED",
+    source: input.source,
     sourceId: input.source,
     route: "MANUAL",
+    requestedIdentifier: input.depre,
+    normalizedIdentifier: input.depre,
+    startedAt: new Date().toISOString(),
+    completedAt: new Date().toISOString(),
+    durationMs: 0,
+    status: "SUCCESS",
+    requestAttempted: true,
+    httpStatus: 200,
+    sourceUrl: input.officialUrl ?? null,
+    officialSourceUrl: input.officialUrl ?? null,
+    errorCode: null,
+    errorMessage: null,
+    rawPayload: {
+      source: input.source,
+      documentIdentifier: input.documentIdentifier,
+      officialUrl: input.officialUrl,
+      preview: true,
+    },
+    metadata: {
+      documentType: input.documentType ?? "OFFICIAL_RECORD",
+      evidenceStrength: input.evidenceStrength ?? "MEDIUM",
+      qualificationStatus: input.qualificationStatus ?? "COLLECTED",
+    },
+    canonicalResult: {
+      provider: "ANALYST_ASSISTED",
+      source: input.source,
+      sourceId: input.source,
+      route: "MANUAL",
+      queryIdentifier: input.depre,
+      status: "SUCCESS",
+      category: "APPLICATION_RESULT",
+      requestAttempted: true,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+      durationMs: 0,
+      httpStatus: 200,
+      officialUrl: input.officialUrl ?? null,
+      resultCount: 1,
+      errorCategory: null,
+      errorMessage: null,
+      legacyStatus: "SUCCESS",
+    },
     documentaryCandidates: [
       {
         documentType: input.documentType ?? "OFFICIAL_RECORD",
@@ -24,8 +66,7 @@ export async function previewManualEvidence(
         notes: `Preview: ${input.evidenceNotes}`,
       },
     ],
-    canonicalResult: { status: "SUCCESS" },
-  } as any;
+  };
 
   const existing = await listOfficialEvidence(input.operationId, input.organizationId, client);
   const resolved = resolveEvidenceCandidatesForAcquisition(acquisitionResult, existing);

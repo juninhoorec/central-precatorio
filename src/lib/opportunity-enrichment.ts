@@ -1,16 +1,13 @@
 import { createClient, type Client } from "@libsql/client";
-import { getOperation, updateOperation, type Operation } from "./operations";
+import { getOperation } from "./operations";
 import { listOfficialEvidence, countVerifiedOfficialEvidence } from "./autonomous-acquisition";
 import { scoreOpportunity, deriveTitularStatusFromBeneficiaries, type OpportunityBlockerCode } from "./opportunity-engine";
 import { persistOpportunityEvaluation } from "./opportunity-evaluations";
 import { appendAudit, hasAuditRequest } from "./audit";
 import { createHash } from "node:crypto";
-import { isOfficialSourceUrl } from "./acquisition-sources";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const db = createDatabaseClient();
 
 const hash = (value: string): string => createHash("sha256").update(value).digest("hex");
 
@@ -54,19 +51,33 @@ export async function enrichOpportunityFromEvidence(
 
   // Extract fields
   const value = Number(wf.credit.grossAmount ?? wf.credit.availableEstimate ?? 0);
-  const valueStatus = value > 0 ? "CONFIRMED" : "MISSING";
+  const valueStatus = value > 0 ? "UNCONFIRMED" : "MISSING";
   const dateBase = wf.credit.valueDate || null;
   const lawyer = wf.credit.legalRepName || null;
   const oab = wf.credit.legalRepOab || null;
   
-  const beneficiaries = Array.isArray(wf.client.beneficiaries) ? wf.client.beneficiaries : [];
-  const titularStatus = deriveTitularStatusFromBeneficiaries(beneficiaries.map((b: any) => ({ role: b.role, status: b.status })));
+  const beneficiaries = Array.isArray(wf.client.beneficiaries)
+    ? (wf.client.beneficiaries as Array<{ role?: string; status?: string; evidenceId?: string; evidenceStrength?: string; sourceType?: string }>)
+    : [];
+  const verifiedEvidenceIds = new Set(verifiedEvidence.map((evidence) => evidence.id));
+  const titularStatus = deriveTitularStatusFromBeneficiaries(
+    beneficiaries.map((b) => ({
+      role: b.role ?? "UNKNOWN",
+      status: b.status === "CURRENT_CONFIRMED"
+        && b.evidenceStrength === "STRONG"
+        && typeof b.evidenceId === "string"
+        && verifiedEvidenceIds.has(b.evidenceId)
+        && ["OFFICIAL_PUBLICATION", "OFFICIAL_API", "OFFICIAL_REGISTER"].includes(String(b.sourceType))
+        ? b.status
+        : "UNVERIFIED_IMPORT",
+    })),
+  );
   
   const contactAvailable = Boolean(wf.client.phone || wf.client.email);
-  const contactStatus = wf.credit.contactSource ? "PROFESSIONAL_ROUTE" : contactAvailable ? "CONFIRMED" : "NO_CONFIRMED_CONTACT";
+  const contactStatus = "NO_CONFIRMED_CONTACT";
 
   const processNumber = wf.credit.originProcessNumber || wf.credit.requisitionProcessNumber || operation.process;
-  const processStatus = processNumber ? "CONFIRMED" : "MISSING";
+  const processStatus = processNumber ? "PENDING" : "MISSING";
 
   // Check coverage state — use actual workflow schema enum values
   const isCoverageSufficient = wf.queryStatus === "CONFIRMED" || wf.documentStatus === "READY" ? "SUFFICIENT_COVERAGE" : "INSUFFICIENT_COVERAGE";
@@ -92,7 +103,7 @@ export async function enrichOpportunityFromEvidence(
     availability: "AVAILABLE",
     titularStatus,
     valueStatus,
-    lawyerStatus: lawyer && oab ? "CONFIRMED" : lawyer ? "UNCONFIRMED" : "MISSING",
+    lawyerStatus: lawyer || oab ? "UNCONFIRMED" : "MISSING",
     processStatus,
     researchStatus: wf.queryStatus || "MANUAL_REQUIRED",
     blockerCodes: beneficiaries.length > 1 ? ["MULTIPLE_BENEFICIARIES_UNRESOLVED"] : [],

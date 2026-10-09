@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { createClient, type Client } from "@libsql/client";
+import { createDatabaseClient } from "./database-config";
 
-const db=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+const db=createDatabaseClient();
 export const officialSources=[
  {id:"tjsp-creditors",name:"TJSP · Credores",url:"https://www.tjsp.jus.br/Precatorios/Precatorios/Credores",host:"www.tjsp.jus.br"},
  {id:"tjsp-general",name:"TJSP · Lista Geral",url:"https://www.tjsp.jus.br/Precatorios/Precatorios/ListaGeral",host:"www.tjsp.jus.br"},
@@ -41,8 +42,11 @@ function rowSnapshot(r:Record<string,unknown>):SourceSnapshot{const d=JSON.parse
 export async function listSourceSnapshots(organizationId:string,client:Client=db){await initializeSourceMonitor(client);const r=await client.execute({sql:"SELECT * FROM capture_source_snapshots WHERE organization_id=? ORDER BY collected_at DESC,rowid DESC LIMIT 1000",args:[organizationId]});return r.rows.map(rowSnapshot)}
 export async function listSourceRuns(organizationId:string,client:Client=db){await initializeSourceMonitor(client);const r=await client.execute({sql:"SELECT * FROM capture_source_runs WHERE organization_id=? ORDER BY started_at DESC LIMIT 50",args:[organizationId]});return r.rows.map(x=>({id:String(x.id),startedAt:String(x.started_at),finishedAt:String(x.finished_at),status:String(x.status),actorUserId:String(x.actor_user_id),summary:JSON.parse(String(x.summary_json)) as Record<string,number>}))}
 
-export async function runOfficialCatalogSync(input:{organizationId:string;userId:string;fetcher?:typeof fetch;now?:()=>Date;onStarted?:(runId:string,startedAt:string)=>Promise<unknown>},client:Client=db){
+export async function runOfficialCatalogSync(input:{organizationId:string;userId:string;fetcher?:typeof fetch;now?:()=>Date;minimumRunIntervalMs?:number;onStarted?:(runId:string,startedAt:string)=>Promise<unknown>},client:Client=db){
  await initializeSourceMonitor(client);const id=crypto.randomUUID(),started=(input.now?.()||new Date()).toISOString(),staleBefore=new Date(Date.parse(started)-600_000).toISOString();await client.execute({sql:"UPDATE capture_source_runs SET finished_at=?,status='FAILED',summary_json=? WHERE organization_id=? AND status='RUNNING' AND started_at<?",args:[started,JSON.stringify({reason:"Execução encerrada por tempo excedido."}),input.organizationId,staleBefore]});
+ const recent=await client.execute({sql:"SELECT started_at,status FROM capture_source_runs WHERE organization_id=? ORDER BY started_at DESC LIMIT 1",args:[input.organizationId]});
+ const interval=input.minimumRunIntervalMs??600_000;
+ if(interval>0&&recent.rows[0]&&String(recent.rows[0].status)!=="RUNNING"&&Date.parse(started)-Date.parse(String(recent.rows[0].started_at))<interval)throw new Error("SOURCE_SYNC_RATE_LIMITED");
  try{await client.execute({sql:"INSERT INTO capture_source_runs VALUES(?,?,?,?,?,?,?)",args:[id,input.organizationId,started,"","RUNNING",input.userId,JSON.stringify({sources:0,changed:0,failed:0,leadsDiscovered:0})]})}catch(error){if(error instanceof Error&&/unique|constraint/i.test(error.message))throw new Error("Execução já em andamento.");throw error}
  await input.onStarted?.(id,started).catch(error=>console.error(JSON.stringify({event:"SOURCE_RUN_AUDIT_FAILED",runId:id,organizationId:input.organizationId,reason:error instanceof Error?error.message:"audit failure"})));
  const fetcher=input.fetcher||fetch,results:SourceSnapshot[]=[],robots=new Map<string,ReturnType<typeof parseRobots>>(),headers={accept:"text/html, application/pdf;q=0.8, text/plain;q=0.9,*/*;q=0.2","user-agent":"CP-SourceMonitor/2.3 (public-source monitor; conservative request rate)"};let failures=0,changed=0;

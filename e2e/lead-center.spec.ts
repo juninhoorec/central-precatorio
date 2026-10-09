@@ -104,7 +104,7 @@ test("Lead Center importa, preserva conflito, mostra fonte e converte para oport
   });
   if (!canonicalOperationId) throw new Error("Synthetic demo operation was not returned by the tenant API.");
   const unauthorizedMutation = await request.post("/api/crm", { data: { action: "create", id: crypto.randomUUID(), operationId: canonicalOperationId } });
-  expect(unauthorizedMutation.status()).toBe(401);
+  expect(unauthorizedMutation.status()).toBe(403);
   await page.getByLabel("ID da operação").fill(canonicalOperationId);
   await page.getByRole("button",{name:"Criar registro CRM"}).click();
   const crmCard=page.locator("article").filter({hasText:canonicalOperationId});

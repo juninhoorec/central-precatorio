@@ -6,7 +6,8 @@ import { createResearchOfficialProcessRoutes } from "./official-process-source-c
 import { normalizeCnjProcessNumber } from "./acquisition-sources";
 import { appendAudit } from "./audit";
 import { assertSchemaMigrations } from "./schema-migrations";
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+import { createDatabaseClient } from "./database-config";
+const db = createDatabaseClient();
 /** Runtime guard only; schema changes are applied by the explicit migration command. */
 export async function initializeAutomation(client: Client = db) { await assertSchemaMigrations(client); }
 function row(v: Record<string, unknown>): AutomationJob { return { id: String(v.id), organizationId: String(v.organization_id), type: String(v.job_type) as AutomationJobType, targetType: String(v.target_type), targetId: String(v.target_id), scheduledAt: String(v.scheduled_at), status: String(v.status) as AutomationJobStatus, attempts: Number(v.attempts), maxAttempts: Number(v.max_attempts), idempotencyKey: String(v.idempotency_key), leaseUntil: v.lease_until ? String(v.lease_until) : null, startedAt: v.started_at ? String(v.started_at) : null, completedAt: v.completed_at ? String(v.completed_at) : null, nextAttemptAt: v.next_attempt_at ? String(v.next_attempt_at) : null, errorCode: v.error_code ? String(v.error_code) : null, errorMessage: v.error_message ? String(v.error_message) : null, createdBy: String(v.created_by) }; }

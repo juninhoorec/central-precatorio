@@ -2,7 +2,8 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { appendAudit } from "@/lib/audit";
 import { cacRecordsToCsv, readTjspCacReport } from "@/lib/tjsp-cac-report";
-import { requireTenantPermission } from "@/lib/tenant";
+import { requireSameOrigin, requireTenantPermission } from "@/lib/tenant";
+import { rateLimit } from "@/lib/rate-limit";
 import { POST as importNormalizedCsv } from "../import/route";
 
 export const runtime = "nodejs";
@@ -18,7 +19,11 @@ export async function POST(request: Request) {
   const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
 
   try {
+    requireSameOrigin(request);
     tenant = await requireTenantPermission(request.headers, "operation:write");
+    if (!(await rateLimit(request, "cac-import", 3, 600, `${tenant.organizationId}:${tenant.userId}`))) {
+      return NextResponse.json({ error: "Limite de importações assistidas atingido." }, { status: 429 });
+    }
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Selecione o relatório oficial do CAC." }, { status: 400 });

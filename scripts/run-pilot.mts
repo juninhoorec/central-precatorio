@@ -1,8 +1,9 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { generateManualResearchBatch } from "../src/lib/manual-research.ts";
 
 const db = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
+  url: requireExplicitDatabaseUrl(),
   authToken: process.env.DATABASE_AUTH_TOKEN,
 });
 

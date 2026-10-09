@@ -14,6 +14,7 @@ describe("versioned schema", () => {
 			"004_relation_tenant_update_guards",
 			"005_opportunity_evaluations",
 			"006_manual_research_tasks",
+			"007_manual_task_tenant_update_guard",
 		];
 		expect(await applySchemaMigrations(client)).toHaveLength(expectedVersions.length);
 		expect(await applySchemaMigrations(client)).toHaveLength(expectedVersions.length);
@@ -25,6 +26,7 @@ describe("versioned schema", () => {
 		expect((await client.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND name='trg_crm_operation_tenant_guard'")).rows).toHaveLength(1);
 		expect((await client.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND name='opportunity_evaluations_tenant_insert_guard'")).rows).toHaveLength(1);
 		expect((await client.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND name='manual_tasks_tenant_insert_guard'")).rows).toHaveLength(1);
+		expect((await client.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND name='manual_tasks_tenant_update_guard'")).rows).toHaveLength(1);
 		await client.close();
 	});
 
@@ -40,6 +42,9 @@ describe("versioned schema", () => {
 		await expect(client.execute("UPDATE crm_records SET organization_id='org-b' WHERE id='crm-a'")).rejects.toThrow("CRM_OPERATION_TENANT_MISMATCH");
 		await expect(client.execute("UPDATE automation_jobs SET target_id='op-b' WHERE id='job-a'")).rejects.toThrow("AUTOMATION_TARGET_TENANT_MISMATCH");
 		await expect(client.execute("UPDATE automation_jobs SET organization_id='org-b' WHERE id='job-a'")).rejects.toThrow("AUTOMATION_TARGET_TENANT_MISMATCH");
+		await client.execute("INSERT INTO manual_research_tasks(id,organization_id,operation_id,depre,source,source_id,route,blocker_type,priority,status,generated_at,instructions_json,idempotency_key) VALUES('task-a','org-a','op-a','DEPRE','TJSP','tjsp','manual','MANUAL_REQUIRED','HIGH','OPEN','now','{}','task-a')");
+		await expect(client.execute("UPDATE manual_research_tasks SET organization_id='org-b' WHERE id='task-a'")).rejects.toThrow("MANUAL_TASK_TENANT_MISMATCH");
+		await expect(client.execute("UPDATE manual_research_tasks SET operation_id='op-b' WHERE id='task-a'")).rejects.toThrow("MANUAL_TASK_TENANT_MISMATCH");
 		await client.close();
 	});
 

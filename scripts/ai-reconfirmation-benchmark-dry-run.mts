@@ -1,3 +1,4 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createHash } from "node:crypto";
 import { createClient } from "@libsql/client";
 import { buildAiReconfirmationRequest, readAiReconfirmationAttemptForBenchmark } from "../src/lib/ai-reconfirmation";
@@ -12,7 +13,7 @@ const runId = option("run-id", SECOND_PILOT_RUN_ID);
 const showPayload = args.includes("--show-payload");
 
 async function main() {
-  const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+  const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
   try {
     const attempt = await readAiReconfirmationAttemptForBenchmark(runId, client);
     if (!attempt) throw new Error("BENCHMARK_ATTEMPT_NOT_FOUND");

@@ -13,16 +13,20 @@ import {
 import { initializeAutonomousAcquisition } from "./autonomous-acquisition";
 
 const client = createClient({ url: "file::memory:" });
+const ORG = "test-org-acq-event";
+const OP = "op-001";
+const DEPRE = "1234567-89.2024.8.26.0000";
 
 beforeAll(async () => {
+  await client.execute("CREATE TABLE operations (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL)");
+  await client.execute({
+    sql: "INSERT INTO operations(id,organization_id) VALUES(?,?),(?,?),(?,?),(?,?)",
+    args: [OP, ORG, "op-no-result", ORG, "op-batch-1", ORG, "op-tenant-b", "other-org"],
+  });
   await initializeAutonomousAcquisition(client);
 });
 
 describe("acquisition-event-recorder", () => {
-  const ORG = "test-org-acq-event";
-  const OP = "op-001";
-  const DEPRE = "1234567-89.2024.8.26.0000";
-
   describe("recordSourceBlockerEvent", () => {
     it("creates a new event for a blocking source result", async () => {
       const result = await recordSourceBlockerEvent(
@@ -110,7 +114,7 @@ describe("acquisition-event-recorder", () => {
       const result = await recordSourceBlockerEvent(
         {
           organizationId: "other-org",
-          operationId: OP,
+          operationId: "op-tenant-b",
           depre: DEPRE,
           sourceId: "tjsp-esaj",
           sourceName: "TJSP e-SAJ",

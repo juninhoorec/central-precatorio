@@ -1,6 +1,7 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { runSourceAcquisitionJobOnce } from "../src/lib/automation-service";
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const org = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const selected = [
   ["02fcb9ba-4e32-4a50-b999-c6de044320a5", "0149031-15.2024.8.26.0500", "São Paulo"],

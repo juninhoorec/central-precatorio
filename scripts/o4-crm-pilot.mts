@@ -1,7 +1,8 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { createCrmRecord, createCrmTask } from "../src/lib/crm-service";
 import { appendAudit } from "../src/lib/audit";
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const org = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const ops = (await client.execute({ sql: "SELECT id, workflow FROM operations WHERE organization_id=? AND is_demo=0 ORDER BY id", args: [org] })).rows.map((raw) => { const r = raw as Record<string, unknown>; const w = JSON.parse(String(r.workflow)) as { credit?: { numeroProcessoDEPRE?: string; municipality?: string } }; return { id: String(r.id), depre: w.credit?.numeroProcessoDEPRE ?? "", municipality: w.credit?.municipality ?? "" }; });
 const evidenceOperation = String(((await client.execute({ sql: "SELECT operation_id FROM official_evidence_documents WHERE organization_id=? ORDER BY operation_id LIMIT 1", args: [org] })).rows[0] as Record<string, unknown>)?.operation_id ?? "");

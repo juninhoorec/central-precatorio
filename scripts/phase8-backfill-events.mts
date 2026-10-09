@@ -1,9 +1,10 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { recordSourceBlockerEvent } from "../src/lib/acquisition-event-recorder";
 import { isBlockingResult } from "../src/lib/acquisition-event-recorder";
 
 const db = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
+  url: requireExplicitDatabaseUrl(),
   authToken: process.env.DATABASE_AUTH_TOKEN,
 });
 
@@ -18,6 +19,7 @@ async function backfill() {
       continue;
     }
     
+    const eventResult = canonicalResult as Parameters<typeof recordSourceBlockerEvent>[0]["canonicalResult"];
     await recordSourceBlockerEvent({
       organizationId: String(t.organization_id),
       operationId: String(t.operation_id),
@@ -25,7 +27,7 @@ async function backfill() {
       sourceId: String(t.source_id),
       sourceName: String(t.source),
       route: String(t.route),
-      canonicalResult: canonicalResult as any,
+      canonicalResult: eventResult,
       failureReason: "Legacy task backfill",
       queryIdentifier: String(t.depre),
       attemptedAt: String(t.generated_at),

@@ -2,6 +2,7 @@ import { createClient, type Client } from "@libsql/client";
 import { z } from "zod";
 import { calculatePricing, createDefaultWorkflow, inventoryMetadataForSources, operationalWorkflowSchema, transitionBlockReason, type OperationalWorkflow } from "./operational-workflow";
 import { DEMO_DOCUMENT_DISCLAIMER, DEMO_DOCUMENT_NAME, DEMO_LEAD, DEMO_PRICING_MARKER, DEMO_REVIEW_MARKER } from "./demo-fixture";
+import { createDatabaseClient } from "./database-config";
 
 export const operationStages = [
   "Entrada",
@@ -91,10 +92,7 @@ export const updateOperationSchema = operationSchema;
 export type Operation = z.infer<typeof operationSchema>;
 export type CreateOperationInput = z.input<typeof createOperationSchema>;
 
-const client = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const client = createDatabaseClient();
 const initializedOperationSchemas = new WeakSet<Client>();
 
 const TABLE_SQL = `CREATE TABLE IF NOT EXISTS operations (

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { executeAiReconfirmation } from "@/lib/ai-reconfirmation";
-import { requireTenantPermission } from "@/lib/tenant";
+import { requireSameOrigin, requireTenantPermission } from "@/lib/tenant";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -9,11 +10,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string; runId: string }> },
 ) {
   try {
-    if (request.headers.get("origin") !== new URL(request.url).origin) {
-      return NextResponse.json({ error: "Origem não autorizada." }, { status: 403 });
-    }
-    const tenant = await requireTenantPermission(request.headers, "operation:write");
+    requireSameOrigin(request);
+    const tenant = await requireTenantPermission(request.headers, "ai:reconfirm");
     await requireTenantPermission(request.headers, "document:read");
+    if (!(await rateLimit(request, "ai-reconfirmation", 5, 600, `${tenant.organizationId}:${tenant.userId}`))) {
+      return NextResponse.json({ error: "Limite de reconfirmações atingido." }, { status: 429 });
+    }
     const { id, runId } = await params;
     const attempt = await executeAiReconfirmation({
       organizationId: tenant.organizationId,

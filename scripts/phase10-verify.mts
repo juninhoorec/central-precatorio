@@ -19,10 +19,11 @@ async function run() {
   const manualTasksRes = await db.execute("SELECT depre FROM manual_research_tasks WHERE organization_id = 'nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u'");
   const pilotDepresWithTasks = [...new Set(manualTasksRes.rows.map(t => String(t.depre)))];
   
-  const pilotCases = operations.filter(op => {
-    const wf = op.workflow as any;
-    const depre = wf?.credit?.numeroProcessoDEPRE;
-    return op.source !== "DEMO" && op.isDemo === false && depre !== "9999999-99.9999.9.99.9999" && pilotDepresWithTasks.includes(depre);
+  const pilotCases = operations.filter((op) => {
+    const wf = op.workflow as Record<string, unknown> | null;
+    const credit = (wf && typeof wf === "object" ? wf.credit : undefined) as Record<string, unknown> | undefined;
+    const depre = typeof credit?.numeroProcessoDEPRE === "string" ? credit.numeroProcessoDEPRE : undefined;
+    return op.source !== "DEMO" && op.isDemo === false && depre !== "9999999-99.9999.9.99.9999" && pilotDepresWithTasks.includes(depre ?? "");
   });
 
   const queue = await getAnalystQueue(ORGANIZATION_ID, {}, db);
@@ -31,8 +32,9 @@ async function run() {
   console.log("-".repeat(120));
 
   for (const op of pilotCases) {
-    const wf = op.workflow as any;
-    const depre = wf?.credit?.numeroProcessoDEPRE;
+    const wf = op.workflow as Record<string, unknown> | null;
+    const credit = (wf && typeof wf === "object" ? wf.credit : undefined) as Record<string, unknown> | undefined;
+    const depre = typeof credit?.numeroProcessoDEPRE === "string" ? credit.numeroProcessoDEPRE : undefined;
     const detail = await getCaseDetail(op.id, ORGANIZATION_ID, db);
     const queueItem = queue.find(q => q.operationId === op.id);
 

@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { createClient, type Client } from "@libsql/client";
 import type { Opportunity } from "./opportunity-engine";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const db = createDatabaseClient();
 
 export async function persistOpportunityEvaluation(result: Opportunity, client: Client = db) {
   const operation = await client.execute({

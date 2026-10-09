@@ -18,7 +18,11 @@ export default function RealPilotDashboard() {
     setError("");
     setReviewMessage("");
     try {
-      const res = await fetch(`/api/ai/experiment?experimentId=${experimentId}&promptVersion=${promptVersion}&regression=${useRegression}`);
+      const res = await fetch("/api/ai/experiment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ experimentId, promptVersion, regression: useRegression }),
+      });
       if (!res.ok) throw new Error("Falha ao executar piloto real.");
       const data = await res.json();
       setExperiment(data);
@@ -36,6 +40,10 @@ export default function RealPilotDashboard() {
   }, [promptVersion, useRegression]);
 
   const recordReview = async (corpusItemId: string, decision: string, reason: string) => {
+    if (!experiment?.runId) {
+      setReviewMessage("Execute novamente o piloto antes de registrar uma revisão.");
+      return;
+    }
     try {
       const res = await fetch("/api/ai/review", {
         method: "POST",
@@ -43,7 +51,7 @@ export default function RealPilotDashboard() {
         body: JSON.stringify({
           corpusItemId,
           experimentId,
-          aiRunId: crypto.randomUUID(),
+          aiRunId: experiment.runId,
           decision,
           reason,
           notes: `Revisado pelo analista via painel CP 2.4.2 em ${new Date().toLocaleTimeString("pt-BR")}`

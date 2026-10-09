@@ -4,6 +4,7 @@ import { initializeAudit } from "./audit";
 import {
   applyManualResearchSchema,
   generateManualResearchTask,
+  submitManualEvidence,
   listManualResearchTasks,
   updateManualTaskStatus,
   type GenerateManualTaskInput,
@@ -14,6 +15,8 @@ const ORG = "test-org-phase6";
 
 beforeAll(async () => {
   db = createClient({ url: ":memory:" });
+  await db.execute("CREATE TABLE operations (id TEXT PRIMARY KEY, organization_id TEXT NOT NULL)");
+  await db.execute({ sql: "INSERT INTO operations(id,organization_id) VALUES(?,?)", args: ["op-001", ORG] });
   // Let official initializeAudit create audit_logs with the correct real schema
   await initializeAudit(db);
   await applyManualResearchSchema(db);
@@ -109,6 +112,23 @@ describe("Phase 6 — Manual Research Tasks", () => {
     await expect(
       updateManualTaskStatus(tasks[0].id, "other-org", "IN_PROGRESS", "attacker", undefined, db)
     ).rejects.toThrow("MANUAL_TASK_NOT_FOUND_OR_WRONG_TENANT");
+  });
+
+  it("blocks evidence submitted against an operation different from the task", async () => {
+    const { task } = await generateManualResearchTask(baseInput(), db);
+    await expect(submitManualEvidence({
+      taskId: task.id,
+      organizationId: ORG,
+      operationId: "different-operation",
+      depre: task.depre,
+      actorUserId: "analyst-001",
+      officialUrl: "https://www.tjsp.jus.br/",
+      documentIdentifier: "DOC-1",
+      documentReference: "CERTIDAO",
+      documentDate: "2026-10-01",
+      source: "untrusted client source",
+      evidenceNotes: "Evidence submitted for ownership binding test",
+    }, db)).rejects.toThrow("MANUAL_TASK_OPERATION_MISMATCH");
   });
 
   it("success condition references 2/2 gate when DOCUMENTATION_BELOW_2_OF_2 is a blocker", async () => {

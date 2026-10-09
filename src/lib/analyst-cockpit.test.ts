@@ -118,7 +118,20 @@ describe("analyst cockpit", () => {
     const docs1 = await listOfficialEvidence(op.id, ORG, db);
     expect(countVerifiedOfficialEvidence(docs1)).toBe(1);
 
-    // Submit same doc (same URL and ID) — should be deduplicated by idempotency key
+    // Preview same doc
+    const preview = await previewManualEvidence({
+      taskId: task.id, organizationId: ORG, operationId: op.id,
+      depre: "1111111-11.1111.1.11.1111", actorUserId: "test",
+      officialUrl: "https://esaj.tjsp.jus.br/1", documentIdentifier: "DOC-1",
+      documentReference: "CERT-1", documentDate: new Date().toISOString(),
+      source: "TJSP_ESAJ", evidenceNotes: "Test Doc 1 DUPLICATE",
+      qualificationStatus: "VERIFIED", evidenceStrength: "STRONG",
+      documentType: "OFICIO_REQUISITORIO"
+    }, db);
+    expect(preview.isDuplicate).toBe(true);
+    expect(preview.duplicateOf).not.toBeNull();
+
+    // Submit same doc
     await submitManualEvidence({
       taskId: task.id, organizationId: ORG, operationId: op.id,
       depre: "1111111-11.1111.1.11.1111", actorUserId: "test",

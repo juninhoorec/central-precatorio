@@ -1,3 +1,4 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { recordHistoricalBeneficiaryObservation, recordImportedBeneficiarySnapshot } from "../src/lib/beneficiary-enrichment";
 import { listOfficialEvidence } from "../src/lib/autonomous-acquisition";
@@ -6,7 +7,7 @@ import { resolveEvidenceCandidatesForAcquisition, type SourceAcquisitionResult }
 import { getOperation } from "../src/lib/operations";
 
 const organizationId = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const apply = process.argv.includes("--apply");
 const targets = [
   { id: "120ca91d-ac87-47a9-83d6-765f56828680", depre: "0165056-11.2021.8.26.0500" },

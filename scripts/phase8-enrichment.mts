@@ -1,9 +1,10 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { getOperation, listOperations } from "../src/lib/operations";
 import { enrichOpportunityFromEvidence } from "../src/lib/opportunity-enrichment";
 
 const db = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
+  url: requireExplicitDatabaseUrl(),
   authToken: process.env.DATABASE_AUTH_TOKEN,
 });
 
@@ -25,36 +26,56 @@ async function runEnrichment() {
   const manualTasks = tasksResult.rows;
   
   const pilotDepresWithTasks = [...new Set(manualTasks.map(t => String(t.depre)))];
-  const pilotOperations = allOps.filter(op => {
-    const wf = op.workflow as any;
-    return !op.isDemo && pilotDepresWithTasks.includes(wf.credit?.numeroProcessoDEPRE);
+  const pilotOperations = allOps.filter((op) => {
+    const wf = op.workflow as Record<string, unknown> | null;
+    const credit = (wf && typeof wf === "object" ? wf.credit : undefined) as Record<string, unknown> | undefined;
+    const depre = typeof credit?.numeroProcessoDEPRE === "string" ? credit.numeroProcessoDEPRE : undefined;
+    return !op.isDemo && depre !== undefined && pilotDepresWithTasks.includes(depre);
   });
 
   console.log(`Running enrichment on ${pilotOperations.length} pilot operations...`);
-  
-  const resultsMatrix: any[] = [];
+
+  const resultsMatrix: Array<{
+    DEPRE: string;
+    TITULAR: string;
+    DEVEDOR: string;
+    VALUE: string;
+    DATE_BASE: string;
+    PROCESS: string;
+    LAWYER_OAB: string;
+    CONTACT: string;
+    DOC_X_2: string;
+    COVERAGE: string;
+    BLOCKERS: number;
+    READY: boolean;
+  }> = [];
 
   for (const op of pilotOperations) {
     try {
       const result = await enrichOpportunityFromEvidence(op.id, ORGANIZATION_ID, ACTOR_ID, db);
-      const wf = op.workflow as any;
+      const wf = op.workflow as Record<string, unknown> | null;
+      const credit = (wf && typeof wf === "object" ? wf.credit : undefined) as Record<string, unknown> | undefined;
+      const debtor = typeof credit?.debtorState === "string" ? credit.debtorState : (op.debtor ?? "UNKNOWN");
+      const queryStatus = typeof wf?.queryStatus === "string" ? wf.queryStatus : "";
+      const documentStatus = typeof wf?.documentStatus === "string" ? wf.documentStatus : "";
 
       resultsMatrix.push({
         DEPRE: result.depre,
         TITULAR: result.titularStatus,
-        DEVEDOR: wf.credit?.debtorState || op.debtor || "UNKNOWN",
+        DEVEDOR: debtor,
         VALUE: result.valueStatus,
         DATE_BASE: result.dateBaseStatus,
         PROCESS: result.processStatus,
         LAWYER_OAB: result.lawyerStatus,
         CONTACT: result.contactStatus,
         DOC_X_2: `${result.qualifyingEvidenceCount}/2`,
-        COVERAGE: wf.queryStatus === "SUCCESS" || wf.documentStatus === "COMPLETE" ? "SUFFICIENT" : "INSUFFICIENT",
+        COVERAGE: queryStatus === "SUCCESS" || documentStatus === "COMPLETE" ? "SUFFICIENT" : "INSUFFICIENT",
         BLOCKERS: result.blockers.length,
         READY: result.readyForAnalyst
       });
-    } catch (e: any) {
-      console.error(`Error enriching operation ${op.id}:`, e.message);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.error(`Error enriching operation ${op.id}:`, message);
     }
   }
 

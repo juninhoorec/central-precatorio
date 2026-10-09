@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { generateStructured, defaultConfig } from "./ollama-provider";
 
 export const extractionStateSchema = z.enum([
   "NOT_PROCESSED",

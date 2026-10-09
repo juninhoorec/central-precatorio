@@ -1,6 +1,7 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { appendAudit } from "../src/lib/audit";
-const c=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+const c=createClient({url:requireExplicitDatabaseUrl(),authToken:process.env.DATABASE_AUTH_TOKEN});
 const org="nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const depes=["0038850-88.2017.8.26.0500","0149031-15.2024.8.26.0500","0246430-49.2021.8.26.0500","0165056-11.2021.8.26.0500","0078231-59.2024.8.26.0500"];
 const before=await c.execute("SELECT (SELECT COUNT(*) FROM operations) operations,(SELECT COUNT(*) FROM official_evidence_documents) evidence,(SELECT COUNT(*) FROM crm_records) crm,(SELECT COUNT(*) FROM crm_tasks) tasks,(SELECT COUNT(*) FROM audit_logs) audits");

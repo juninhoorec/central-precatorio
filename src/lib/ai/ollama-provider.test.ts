@@ -15,6 +15,15 @@ describe("Ollama health check", () => {
     expect(aiProviderLimits.healthInferenceTimeoutMs).toBe(90_000);
   });
 
+  it("does not contact a non-local AI endpoint without explicit external-data consent", async () => {
+    const remote = { ...config, baseUrl: "https://ai.example.test" };
+    const health = await checkOllamaHealth(remote, { forceRefresh: true });
+    expect(health.status).toBe("EXTERNAL_DATA_TRANSFER_DISABLED");
+    await expect(generateStructured("external document content", z.object({ ok: z.boolean() }), "", remote))
+      .rejects.toThrow("AI_EXTERNAL_DATA_TRANSFER_DISABLED");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it("reports a tags timeout by phase", async () => {
     mockFetch.mockRejectedValueOnce(Object.assign(new Error("timed out"), { name: "TimeoutError" }));
     const health = await checkOllamaHealth(config, { forceRefresh: true });

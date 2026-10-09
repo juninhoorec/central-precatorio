@@ -1,12 +1,20 @@
 import { createHash } from "node:crypto";
 import { createClient, type Client } from "@libsql/client";
 import { z } from "zod";
+import { createDatabaseClient } from "./database-config";
 
-const db=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+const db=createDatabaseClient();
 export const documentStatuses=["UPLOADED","QUARANTINED","SCANNING","SAFE","REJECTED","ARCHIVED"] as const;
 export const scanStatuses=["NOT_SCANNED","DEMO_SCAN","CLEAN","INFECTED","ERROR"] as const;
 export const documentCategories=["IDENTIDADE","CPF_CNPJ","COMPROVANTE_ENDERECO","PRECATORIO","PROCESSO","PROCURACAO","PARECER_JURIDICO","PROPOSTA","CESSAO","OUTRO"] as const;
 export type DocumentStatus=(typeof documentStatuses)[number];
+const uploadSchema=z.object({
+  operationId:z.uuid(),
+  organizationId:z.string().trim().min(1).max(160),
+  name:z.string().trim().min(1).max(180).refine((value)=>!/[\\/\r\n\0]/.test(value)),
+  bytes:z.instanceof(Uint8Array).refine((value)=>value.byteLength>5&&value.byteLength<=5*1024*1024).refine((value)=>new TextDecoder().decode(value.subarray(0,5))==="%PDF-"),
+  createdBy:z.string().trim().min(1).max(160),
+}).strict();
 
 export const documentMetadataSchema=z.object({id:z.string().uuid(),operationId:z.string().uuid(),organizationId:z.string(),name:z.string(),hash:z.string().length(64),size:z.number().int().nonnegative(),mime:z.literal("application/pdf"),status:z.enum(documentStatuses),scanStatus:z.enum(scanStatuses),category:z.enum(documentCategories),version:z.number().int().positive(),reviewerNotes:z.string(),retentionUntil:z.string(),createdBy:z.string(),createdAt:z.string(),updatedAt:z.string()});
 export type DocumentMetadata=z.infer<typeof documentMetadataSchema>;
@@ -18,6 +26,8 @@ export async function initializeDocumentStorage(client:Client=db){
   await client.execute("CREATE TABLE IF NOT EXISTS operation_documents (id TEXT PRIMARY KEY,operation_id TEXT NOT NULL,name TEXT NOT NULL,hash TEXT NOT NULL,content BLOB NOT NULL,created_at TEXT NOT NULL,organization_id TEXT NOT NULL DEFAULT 'legacy-internal')");
   const cols=await client.execute("PRAGMA table_info(operation_documents)"); const add=async(name:string,sql:string)=>{if(!cols.rows.some(r=>r.name===name))try{await client.execute(`ALTER TABLE operation_documents ADD COLUMN ${sql}`)}catch{const current=await client.execute("PRAGMA table_info(operation_documents)");if(!current.rows.some(r=>r.name===name))throw new Error(`Falha ao migrar documento: ${name}`)}};
   await add("size","size INTEGER NOT NULL DEFAULT 0");await add("mime","mime TEXT NOT NULL DEFAULT 'application/pdf'");await add("status","status TEXT NOT NULL DEFAULT 'UPLOADED'");await add("scan_status","scan_status TEXT NOT NULL DEFAULT 'NOT_SCANNED'");await add("category","category TEXT NOT NULL DEFAULT 'OUTRO'");await add("version","version INTEGER NOT NULL DEFAULT 1");await add("reviewer_notes","reviewer_notes TEXT NOT NULL DEFAULT ''");await add("retention_until","retention_until TEXT NOT NULL DEFAULT ''");await add("created_by","created_by TEXT NOT NULL DEFAULT 'legacy'");await add("updated_at","updated_at TEXT NOT NULL DEFAULT ''");
+  await client.execute(`CREATE TRIGGER IF NOT EXISTS operation_documents_tenant_insert_guard BEFORE INSERT ON operation_documents BEGIN SELECT RAISE(ABORT,'DOCUMENT_OPERATION_TENANT_MISMATCH') WHERE NOT EXISTS(SELECT 1 FROM operations WHERE id=NEW.operation_id AND organization_id=NEW.organization_id); END`);
+  await client.execute(`CREATE TRIGGER IF NOT EXISTS operation_documents_tenant_update_guard BEFORE UPDATE OF operation_id,organization_id ON operation_documents BEGIN SELECT RAISE(ABORT,'DOCUMENT_OPERATION_TENANT_MISMATCH') WHERE NOT EXISTS(SELECT 1 FROM operations WHERE id=NEW.operation_id AND organization_id=NEW.organization_id); END`);
   await client.execute("CREATE INDEX IF NOT EXISTS operation_documents_organization_idx ON operation_documents(organization_id,operation_id,created_at DESC)");
   await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS operation_documents_hash_idx ON operation_documents(organization_id,operation_id,hash)");
   initializedClients.add(client);
@@ -30,14 +40,14 @@ export interface StorageAdapter { upload(input:{operationId:string;organizationI
 export class DatabaseStorageAdapter implements StorageAdapter{
   constructor(private client:Client=db){}
   checksum(bytes:Uint8Array){return createHash("sha256").update(bytes).digest("hex")}
-  async upload(input:{operationId:string;organizationId:string;name:string;bytes:Uint8Array;createdBy:string}){await initializeDocumentStorage(this.client);const id=crypto.randomUUID(),hash=this.checksum(input.bytes),now=new Date().toISOString();const scanStatus=process.env.NODE_ENV==="production"?"NOT_SCANNED":"DEMO_SCAN";await this.client.execute({sql:"INSERT INTO operation_documents (id,operation_id,name,hash,content,created_at,organization_id,size,mime,status,scan_status,category,version,reviewer_notes,retention_until,created_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",args:[id,input.operationId,input.name,hash,input.bytes,now,input.organizationId,input.bytes.byteLength,"application/pdf","QUARANTINED",scanStatus,"OUTRO",1,"","",input.createdBy,now]});return (await this.getMetadata(id,input.organizationId))!}
+  async upload(input:{operationId:string;organizationId:string;name:string;bytes:Uint8Array;createdBy:string}){const data=uploadSchema.parse(input);await initializeDocumentStorage(this.client);const operation=await this.client.execute({sql:"SELECT id FROM operations WHERE id=? AND organization_id=?",args:[data.operationId,data.organizationId]});if(!operation.rows[0])throw new Error("DOCUMENT_OPERATION_TENANT_MISMATCH");const id=crypto.randomUUID(),hash=this.checksum(data.bytes),now=new Date().toISOString();const scanStatus=process.env.NODE_ENV==="production"?"NOT_SCANNED":"DEMO_SCAN";await this.client.execute({sql:"INSERT INTO operation_documents (id,operation_id,name,hash,content,created_at,organization_id,size,mime,status,scan_status,category,version,reviewer_notes,retention_until,created_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",args:[id,data.operationId,data.name,hash,data.bytes,now,data.organizationId,data.bytes.byteLength,"application/pdf","QUARANTINED",scanStatus,"OUTRO",1,"","",data.createdBy,now]});return (await this.getMetadata(id,data.organizationId))!}
   async getMetadata(id:string,organizationId:string){await initializeDocumentStorage(this.client);const r=await this.client.execute({sql:"SELECT * FROM operation_documents WHERE id=? AND organization_id=?",args:[id,organizationId]});return r.rows[0]?metadata(r.rows[0]):null}
   async createPrivateAccess(id:string,organizationId:string){await initializeDocumentStorage(this.client);const r=await this.client.execute({sql:"SELECT * FROM operation_documents WHERE id=? AND organization_id=?",args:[id,organizationId]});if(!r.rows[0])return null;const m=metadata(r.rows[0]);if(["REJECTED","ARCHIVED"].includes(m.status))return null;const view=new Uint8Array(r.rows[0].content as ArrayBuffer);return{metadata:m,bytes:view.buffer.slice(view.byteOffset,view.byteOffset+view.byteLength) as ArrayBuffer}}
   async list(operationId:string,organizationId:string){await initializeDocumentStorage(this.client);const r=await this.client.execute({sql:"SELECT * FROM operation_documents WHERE operation_id=? AND organization_id=? ORDER BY created_at DESC",args:[operationId,organizationId]});return r.rows.map(metadata)}
   async updateReview(id:string,organizationId:string,input:{status:DocumentStatus;category:(typeof documentCategories)[number];reviewerNotes:string;retentionUntil:string}){await initializeDocumentStorage(this.client);const now=new Date().toISOString();await this.client.execute({sql:"UPDATE operation_documents SET status=?,category=?,reviewer_notes=?,retention_until=?,updated_at=? WHERE id=? AND organization_id=?",args:[input.status,input.category,input.reviewerNotes,input.retentionUntil,now,id,organizationId]});return this.getMetadata(id,organizationId)}
   async quarantine(id:string,organizationId:string){await this.client.execute({sql:"UPDATE operation_documents SET status='QUARANTINED',updated_at=? WHERE id=? AND organization_id=?",args:[new Date().toISOString(),id,organizationId]})}
   async restore(id:string,organizationId:string){await this.client.execute({sql:"UPDATE operation_documents SET status='UPLOADED',updated_at=? WHERE id=? AND organization_id=? AND status='ARCHIVED'",args:[new Date().toISOString(),id,organizationId]})}
-  async delete(id:string,organizationId:string){await this.client.execute({sql:"UPDATE operation_documents SET status='ARCHIVED',content=x'',updated_at=? WHERE id=? AND organization_id=?",args:[new Date().toISOString(),id,organizationId]})}
+  async delete(id:string,organizationId:string){await this.client.execute({sql:"UPDATE operation_documents SET status='ARCHIVED',updated_at=? WHERE id=? AND organization_id=?",args:[new Date().toISOString(),id,organizationId]})}
   async moveToPermanentStorage(id:string,organizationId:string){await this.client.execute({sql:"UPDATE operation_documents SET status='SAFE',updated_at=? WHERE id=? AND organization_id=? AND scan_status='CLEAN'",args:[new Date().toISOString(),id,organizationId]})}
 }
 

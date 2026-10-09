@@ -1,5 +1,6 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
-const c = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const c = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const queries = [
   ["operations", "SELECT COUNT(*) n, COUNT(DISTINCT json_extract(workflow,'$.credit.numeroProcessoDEPRE')) unique_depre, SUM(CASE WHEN is_demo=1 THEN 1 ELSE 0 END) demo FROM operations"],
   ["availability", "SELECT workflow->>'$.inventory.availability' availability, COUNT(*) n FROM operations GROUP BY availability"],

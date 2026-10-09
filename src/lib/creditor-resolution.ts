@@ -1,7 +1,8 @@
 import { createClient, type Client } from "@libsql/client";
 import { z } from "zod";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const db = createDatabaseClient();
 export const creditorResolutionStates = ["PENDENTE", "CREDOR_IDENTIFICADO", "CREDOR_CORROBORADO", "CREDOR_PARCIALMENTE_IDENTIFICADO", "CREDOR_NÃO_IDENTIFICADO", "POSSÍVEL_CORRESPONDÊNCIA", "CONFLITO_DE_IDENTIDADE", "REVISÃO_HUMANA", "FONTE_INDISPONÍVEL"] as const;
 export const creditorRoles = ["CREDOR", "BENEFICIÁRIO", "REQUERENTE", "AUTOR", "ADVOGADO", "DEVEDOR", "HERDEIRO", "CESSIONÁRIO", "OUTRO", "NÃO_IDENTIFICADO"] as const;
 export const creditorQueryStates = ["RESULTS_FOUND", "RESULT_ZERO", "ACCESS_FAILED", "REQUIRES_ASSISTED_ACTION"] as const;

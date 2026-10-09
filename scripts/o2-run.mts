@@ -1,7 +1,8 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { runSourceAcquisitionJobOnce } from "../src/lib/automation-service";
 
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const org = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const excluded = new Set([
   "0149031-15.2024.8.26.0500", "0078231-59.2024.8.26.0500", "0234462-80.2025.8.26.0500", "0066316-47.2023.8.26.0500",

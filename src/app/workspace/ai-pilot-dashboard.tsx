@@ -17,7 +17,11 @@ export default function AIPilotDashboard() {
     setError("");
     try {
       const [resScore, resItems] = await Promise.all([
-        fetch(`/api/ai/evaluate?promptVersion=${version}`),
+        fetch("/api/ai/evaluate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ promptVersion: version }),
+        }),
         fetch("/api/ai/pilot")
       ]);
       if (resScore.ok) setScorecard(await resScore.json());

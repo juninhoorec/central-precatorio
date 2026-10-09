@@ -18,7 +18,7 @@ export const defaultConfig: AIProviderConfig = {
 
 type OllamaChatResponse = { message?: { content?: string }; load_duration?: number; };
 type HealthPhase = "PENDING" | "OK" | "NOT_RUN" | "FAILED" | "TIMEOUT";
-export type AIHealthStatusCode = "OLLAMA_OFFLINE" | "TAGS_TIMEOUT" | "MODEL_NOT_FOUND" | "GENERATION_TIMEOUT" | "GENERATION_FAILED" | "STRUCTURED_OUTPUT_TIMEOUT" | "STRUCTURED_OUTPUT_FAILED" | "TOTAL_HEALTH_TIMEOUT" | "READY";
+export type AIHealthStatusCode = "OLLAMA_OFFLINE" | "TAGS_TIMEOUT" | "MODEL_NOT_FOUND" | "GENERATION_TIMEOUT" | "GENERATION_FAILED" | "STRUCTURED_OUTPUT_TIMEOUT" | "STRUCTURED_OUTPUT_FAILED" | "TOTAL_HEALTH_TIMEOUT" | "EXTERNAL_DATA_TRANSFER_DISABLED" | "READY";
 
 export interface AIHealthStatus {
   status: AIHealthStatusCode;
@@ -41,6 +41,14 @@ let aiJobTail: Promise<void> = Promise.resolve();
 function now() { return new Date().toISOString(); }
 function emptyPhases(): AIHealthStatus["phases"] { return { tags: "PENDING", model: "NOT_RUN", generation: "NOT_RUN", structuredOutput: "NOT_RUN" }; }
 function isTimeout(error: unknown) { return error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"); }
+function externalDataTransferAllowed(config:AIProviderConfig){
+  try{
+    const endpoint=new URL(config.baseUrl);
+    const hostname=endpoint.hostname.replace(/^\[|\]$/g,"").toLowerCase();
+    const local=endpoint.protocol==="http:"&&["localhost","127.0.0.1","::1"].includes(hostname)&&!endpoint.username&&!endpoint.password;
+    return local||(endpoint.protocol==="https:"&&process.env.CP_AI_ALLOW_EXTERNAL_DATA==="true"&&!endpoint.username&&!endpoint.password);
+  }catch{return false}
+}
 
 function healthStatus(code: AIHealthStatusCode, start: number, phases: AIHealthStatus["phases"], timings: Omit<AIHealthStatus["timings"], "totalHealthMs">, details: Pick<AIHealthStatus, "failedPhase" | "error" | "retryUsed" | "coldStart">): AIHealthStatus {
   const totalHealthMs = Date.now() - start;
@@ -64,6 +72,7 @@ async function checkOllamaHealthUncached(config: AIProviderConfig): Promise<AIHe
   const startedAt = Date.now();
   const phases = emptyPhases();
   const timings: Omit<AIHealthStatus["timings"], "totalHealthMs"> = {};
+  if(!externalDataTransferAllowed(config))return healthStatus("EXTERNAL_DATA_TRANSFER_DISABLED",startedAt,phases,timings,{error:"External AI data transfer is disabled by policy",retryUsed:false,coldStart:null,failedPhase:"tags"});
   let retryUsed = false;
   let coldStart: AIHealthStatus["coldStart"] = null;
   const tagsStartedAt = Date.now();
@@ -136,6 +145,7 @@ export async function checkOllamaHealth(config = defaultConfig, options: HealthO
 export function clearOllamaHealthCache() { cachedHealth = undefined; }
 
 export async function generateStructured<T>(prompt: string, schema: z.ZodSchema<T>, system?: string, config = defaultConfig): Promise<T> {
+  if(!externalDataTransferAllowed(config))throw new Error("AI_EXTERNAL_DATA_TRANSFER_DISABLED");
   return runExclusiveAIJob(async () => {
     let attempt = 0;
     while (attempt <= config.maxRetries) {

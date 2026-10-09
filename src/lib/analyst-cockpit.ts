@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient, type Client } from "@libsql/client";
 
-import { listManualResearchTasks, type ManualTaskStatus } from "./manual-research";
+import { listManualResearchTasks } from "./manual-research";
 import { getOperation } from "./operations";
 import { listOfficialEvidence, countVerifiedOfficialEvidence } from "./autonomous-acquisition";
-import { listSourceBlockerEvents } from "./acquisition-event-recorder";
+import { createDatabaseClient } from "./database-config";
 
 // --- 10-01 ANALYST QUEUE ---
 
@@ -33,7 +33,7 @@ export async function getAnalystQueue(
   filters: { status?: string; blocker?: string; depre?: string } = {},
   client?: Client
 ): Promise<AnalystQueueItem[]> {
-  const c = client || createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+  const c = client || createDatabaseClient();
   const tasks = await listManualResearchTasks(organizationId, {}, c);
   
   const queue: AnalystQueueItem[] = [];
@@ -162,7 +162,7 @@ export async function getCaseDetail(
   organizationId: string,
   client?: Client
 ): Promise<CaseDetailWorkspace | null> {
-  const c = client || createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+  const c = client || createDatabaseClient();
   const op = await getOperation(operationId, c, organizationId);
   if (!op) return null;
 

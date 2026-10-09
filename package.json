@@ -10,6 +10,7 @@
     "test": "vitest run",
     "auth:migrate": "node --import tsx scripts/auth-migrate.mts",
     "auth:bootstrap-local-owner": "node --import tsx scripts/bootstrap-local-owner.mts --local-development",
+    "schema:migrate": "node --import tsx scripts/apply-schema-migrations.mts",
     "migrate:domain": "node --import tsx scripts/migrate-domain.mts",
     "test:e2e": "playwright test",
     "source:check": "node --import tsx scripts/source-smoke.mts",

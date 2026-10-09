@@ -2,7 +2,8 @@ import { createClient, type Client } from "@libsql/client";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+import { createDatabaseClient } from "./database-config";
+const db = createDatabaseClient();
 const migrations = [
   { version: "001_crm_automation", path: "001_crm_automation.sql" },
   { version: "002_crm_automation_integrity", path: "002_crm_automation_integrity.sql" },
@@ -10,6 +11,7 @@ const migrations = [
   { version: "004_relation_tenant_update_guards", path: "004_relation_tenant_update_guards.sql" },
   { version: "005_opportunity_evaluations", path: "005_opportunity_evaluations.sql" },
   { version: "006_manual_research_tasks", path: "006_manual_research_tasks.sql" },
+  { version: "007_manual_task_tenant_update_guard", path: "007_manual_task_tenant_update_guard.sql" },
 ] as const;
 const migrationsDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "../../migrations");
 

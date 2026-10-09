@@ -1,7 +1,8 @@
 import { createClient, type Client } from "@libsql/client";
 import { createHash } from "node:crypto";
+import { createDatabaseClient } from "./database-config";
 
-const db=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+const db=createDatabaseClient();
 export type ImportStatus="PROCESSING"|"COMPLETED"|"COMPLETED_WITH_WARNINGS"|"FAILED";
 export type ImportSummary={read:number;created:number;updated:number;duplicates:number;conflicts:number;rpvs:number;skipped:number;belowMinimum:number;incomplete:number;errors:number};
 export async function initializeCaptureImports(client:Client=db){

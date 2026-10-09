@@ -7,8 +7,9 @@ import { isOfficialSourceUrl } from "./acquisition-sources";
 import { getOperation, updateOperation } from "./operations";
 import { beneficiaryObservationSchema } from "./operational-workflow";
 import { normalizeOfficialUrl } from "./identifier-normalizer";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const db = createDatabaseClient();
 const historicalObservationInput = beneficiaryObservationSchema.omit({ id: true }).extend({
   status: z.enum(["HISTORICAL_CONFIRMED", "DIVERGENT"]),
 });

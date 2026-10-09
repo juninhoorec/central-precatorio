@@ -4,6 +4,7 @@ import { saveLead } from "@/lib/lead-repository";
 import { scoreLabel } from "@/lib/lead-score";
 import { scoreAnswers } from "@/lib/score-lead";
 import { rateLimit } from "@/lib/rate-limit";
+import { readJsonBody } from "@/lib/request-validation";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   if (!(await rateLimit(request, "leads", 8)))
@@ -11,9 +12,13 @@ export async function POST(request: Request) {
       { error: "Muitas tentativas. Aguarde alguns minutos." },
       { status: 429 },
     );
-  const parsed = leadInputSchema.safeParse(
-    await request.json().catch(() => null),
-  );
+  const body = await readJsonBody(request, 16 * 1024);
+  if (!body.ok)
+    return NextResponse.json(
+      { error: body.reason === "too_large" ? "O formulário excede o limite permitido." : "Revise os dados informados." },
+      { status: body.reason === "too_large" ? 413 : 400 },
+    );
+  const parsed = leadInputSchema.safeParse(body.value);
   if (!parsed.success || parsed.data.website)
     return NextResponse.json(
       { error: "Revise os dados informados." },

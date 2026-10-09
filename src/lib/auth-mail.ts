@@ -1,5 +1,6 @@
 import { createClient } from "@libsql/client";
-const db=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});
+import { createDatabaseClient } from "./database-config";
+const db=createDatabaseClient();
 export type AuthMailKind="VERIFY_EMAIL"|"RESET_PASSWORD"|"TWO_FACTOR";
 export async function deliverAuthMail(input:{to:string;url:string;kind:AuthMailKind}){
   const webhook=process.env.AUTH_EMAIL_WEBHOOK_URL,secret=process.env.AUTH_EMAIL_WEBHOOK_SECRET;

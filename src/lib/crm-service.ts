@@ -1,8 +1,9 @@
 import { createClient, type Client } from "@libsql/client";
 import { canTransition, type CrmActivity, type CrmRecord, type CrmStage, type CrmTask } from "./crm";
 import { assertSchemaMigrations } from "./schema-migrations";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const db = createDatabaseClient();
 /** Runtime guard only; schema changes are applied by the explicit migration command. */
 export async function initializeCrm(client: Client = db) { await assertSchemaMigrations(client); }
 function record(row: Record<string, unknown>): CrmRecord { return { id: String(row.id), organizationId: String(row.organization_id), operationId: String(row.operation_id), opportunityId: row.opportunity_id ? String(row.opportunity_id) : null, contactIds: JSON.parse(String(row.contact_ids)), stage: String(row.stage) as CrmStage, createdAt: String(row.created_at), updatedAt: String(row.updated_at), nextActionAt: row.next_action_at ? String(row.next_action_at) : null }; }

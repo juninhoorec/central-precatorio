@@ -12,7 +12,7 @@ export default function CrmPage() {
     <p>Pipeline derivado de operações e oportunidades. Dados de origem permanecem preservados.</p>
     <section style={{ display: "flex", gap: 8, alignItems: "end", marginBottom: 16 }}>
       <label>ID da operação<input aria-label="ID da operação" value={operationId} disabled={busy} onChange={(event) => setOperationId(event.target.value)} /></label>
-      <button type="button" disabled={busy || !operationId.trim()} onClick={() => void mutate({ action: "create", id: crypto.randomUUID(), operationId: operationId.trim() })}>Criar registro CRM</button>
+      <button type="button" disabled={busy || !operationId.trim()} onClick={() => void mutate({ action: "create", operationId: operationId.trim() })}>Criar registro CRM</button>
     </section>
     {error && <p role="alert">{error}</p>}
     <section style={{ display: "grid", gap: 12 }}>
@@ -23,9 +23,9 @@ export default function CrmPage() {
           {stages.map((stage) => <option key={stage}>{stage}</option>)}
         </select></label>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <button type="button" disabled={busy} onClick={() => void mutate({ action: "activity", id: crypto.randomUUID(), crmId: item.id, type: "CALL_COMPLETED", notes: "Contato concluído pelo operador" })}>Registrar contato concluído</button>
-          <button type="button" disabled={busy} onClick={() => void mutate({ action: "task", id: crypto.randomUUID(), crmId: item.id, title: "Revisar próximo passo", description: "Tarefa criada pelo operador", idempotencyKey: `follow-up-${item.id}` })}>Criar tarefa</button>
-          <button type="button" disabled={busy} onClick={() => void mutate({ action: "activity", id: crypto.randomUUID(), crmId: item.id, type: "NOTE", notes: "Nota operacional registrada pelo usuário" })}>Registrar nota</button>
+          <button type="button" disabled={busy} onClick={() => void mutate({ action: "activity", crmId: item.id, type: "CALL_COMPLETED", notes: "Contato concluído pelo operador" })}>Registrar contato concluído</button>
+          <button type="button" disabled={busy} onClick={() => void mutate({ action: "task", crmId: item.id, title: "Revisar próximo passo", description: "Tarefa criada pelo operador", idempotencyKey: `follow-up-${item.id}` })}>Criar tarefa</button>
+          <button type="button" disabled={busy} onClick={() => void mutate({ action: "activity", crmId: item.id, type: "NOTE", notes: "Nota operacional registrada pelo usuário" })}>Registrar nota</button>
         </div>
         <small>Atualizado: {new Date(item.updatedAt).toLocaleString("pt-BR")}</small>
       </article>)}

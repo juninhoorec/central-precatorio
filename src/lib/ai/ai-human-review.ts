@@ -16,6 +16,7 @@ export type ReviewReason = z.infer<typeof reviewReasonSchema>;
 
 export const humanReviewRecordSchema = z.object({
   id: z.string().uuid(),
+  organizationId: z.string().trim().min(1).max(160),
   corpusItemId: z.string().uuid(),
   experimentId: z.string().trim().default("CP24-PILOT-001"),
   aiRunId: z.string().uuid(),
@@ -37,12 +38,12 @@ export class HumanReviewStore {
     return parsed;
   }
 
-  getForCorpusItem(corpusItemId: string): HumanReviewRecord[] {
-    return Array.from(this.reviews.values()).filter(r => r.corpusItemId === corpusItemId);
+  getForCorpusItem(corpusItemId: string, organizationId?: string): HumanReviewRecord[] {
+    return Array.from(this.reviews.values()).filter(r => r.corpusItemId === corpusItemId && (!organizationId || r.organizationId === organizationId));
   }
 
-  getAll(): HumanReviewRecord[] {
-    return Array.from(this.reviews.values());
+  getAll(organizationId?: string): HumanReviewRecord[] {
+    return Array.from(this.reviews.values()).filter((review) => !organizationId || review.organizationId === organizationId);
   }
 }
 

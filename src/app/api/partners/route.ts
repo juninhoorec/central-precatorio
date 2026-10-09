@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 import { savePartner } from "@/lib/partner-repository";
+import { readJsonBody } from "@/lib/request-validation";
 const schema = z.object({
   idempotencyKey: z.string().uuid(),
   company: z.string().trim().min(2).max(120),
@@ -16,7 +17,9 @@ const schema = z.object({
 export async function POST(request: Request) {
   if (!(await rateLimit(request, "partners", 6)))
     return NextResponse.json({ error: "Muitas tentativas. Aguarde alguns minutos." }, { status: 429 });
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const body = await readJsonBody(request, 8 * 1024);
+  if (!body.ok) return NextResponse.json({ error: body.reason === "too_large" ? "Dados excedem o limite permitido." : "Dados inválidos" }, { status: body.reason === "too_large" ? 413 : 400 });
+  const parsed = schema.safeParse(body.value);
   if (!parsed.success || parsed.data.website)
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   const saved = await savePartner(parsed.data);

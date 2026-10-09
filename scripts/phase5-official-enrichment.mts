@@ -1,3 +1,4 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import nextEnv from "@next/env";
 import { createHash } from "node:crypto";
 
@@ -15,7 +16,7 @@ const { executePhase5EnrichmentForCase } = await import("../src/lib/official-enr
 const organizationId = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const actorUserId = "system:phase5-official-enrichment";
 const execute = process.argv.includes("--execute");
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 
 const selectedCases = [
   { operationId: "433c2565-d5d0-424a-b0e1-af7e1d3962b2", depre: "0038850-88.2017.8.26.0500" },

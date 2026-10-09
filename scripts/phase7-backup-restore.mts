@@ -1,3 +1,4 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { access, copyFile, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -5,9 +6,9 @@ import { createClient, type Client } from "@libsql/client";
 import { createHash } from "node:crypto";
 import { verifyAuditChain } from "../src/lib/audit";
 
-const expectedMigrations = ["001_crm_automation", "002_crm_automation_integrity", "003_crm_operation_tenant_guard", "004_relation_tenant_update_guards"];
+const expectedMigrations = ["001_crm_automation", "002_crm_automation_integrity", "003_crm_operation_tenant_guard", "004_relation_tenant_update_guards", "005_opportunity_evaluations", "006_manual_research_tasks", "007_manual_task_tenant_update_guard"];
 
-const databaseUrl = process.env.DATABASE_URL || "file:central-precatorios.db";
+const databaseUrl = requireExplicitDatabaseUrl();
 if (!databaseUrl.startsWith("file:")) throw new Error("ISOLATED_BACKUP_REQUIRES_LOCAL_DATABASE");
 const sourcePath = databaseUrl.slice("file:".length);
 await access(sourcePath);
@@ -36,6 +37,13 @@ async function summary(client: Client) {
     (SELECT COUNT(*) FROM crm_activities) crm_activities,
     (SELECT COUNT(*) FROM automation_jobs) automation_jobs,
     (SELECT COUNT(*) FROM schema_migrations) migrations`);
+  const entityCounts: Record<string, number> = {};
+  for (const table of ["operation_documents", "manual_research_tasks", "opportunity_evaluations", "autonomous_acquisition_jobs", "ai_reconfirmation_runs"]) {
+    const exists = await client.execute({ sql: "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", args: [table] });
+    if (!exists.rows.length) continue;
+    const count = await client.execute(`SELECT COUNT(*) AS total FROM ${table}`);
+    entityCounts[table] = Number(count.rows[0]?.total || 0);
+  }
   const tenants = await client.execute("SELECT organization_id,COUNT(*) operations FROM operations GROUP BY organization_id ORDER BY organization_id");
   const violations = await client.execute(`SELECT
     (SELECT COUNT(*) FROM official_evidence_documents d LEFT JOIN operations o ON o.id=d.operation_id AND o.organization_id=d.organization_id WHERE o.id IS NULL) orphan_evidence,
@@ -53,6 +61,7 @@ async function summary(client: Client) {
   })));
   return {
     counts: counts.rows[0],
+    entityCounts,
     tenants: tenants.rows,
     violations: violations.rows[0],
     integrity: integrity.rows,

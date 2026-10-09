@@ -1,7 +1,8 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { scoreOpportunity, type Opportunity } from "../src/lib/opportunity-engine";
 
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const org = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const operations = (await client.execute({ sql: "SELECT id, workflow, debtor, version FROM operations WHERE organization_id=? AND is_demo=0 ORDER BY id", args: [org] })).rows.map((raw) => {
   const row = raw as Record<string, unknown>;

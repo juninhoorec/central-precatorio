@@ -32,18 +32,14 @@ import { appendAudit } from "./audit";
 import { buildEvidenceCandidates, resolveEvidenceCandidatesForAcquisition } from "./research-pipeline";
 import { listOfficialEvidence } from "./autonomous-acquisition";
 import { persistResolvedOfficialEvidence } from "./evidence-persistence";
-import { persistOpportunityEvaluation } from "./opportunity-evaluations";
-import { scoreOpportunity } from "./opportunity-engine";
-import { getOperation } from "./operations";
 import { recordSourceBlockerEvent, isBlockingResult } from "./acquisition-event-recorder";
 import { extractKnownIdentifiersCompat } from "./known-identifiers";
+import { isOfficialSourceUrl } from "./acquisition-sources";
 import type { SourceAcquisitionResult } from "./research-pipeline";
 import type { OpportunityBlockerCode } from "./opportunity-engine";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const db = createDatabaseClient();
 
 export async function applyManualResearchSchema(client: Client = db) {
   await client.execute(`
@@ -79,7 +75,8 @@ export async function applyManualResearchSchema(client: Client = db) {
 // ---------------------------------------------------------------------------
 
 /** Canonical status of a manual research task. NOT to be confused with source blocker status. */
-export type ManualTaskStatus = "OPEN" | "IN_PROGRESS" | "WAITING_EXTERNAL" | "BLOCKED" | "COMPLETED" | "CANCELLED";
+export const manualTaskStatuses = ["OPEN", "IN_PROGRESS", "WAITING_EXTERNAL", "BLOCKED", "COMPLETED", "CANCELLED"] as const;
+export type ManualTaskStatus = (typeof manualTaskStatuses)[number];
 
 /** Priority derived deterministically from the blocker codes present. */
 export type ManualTaskPriority = "HIGH" | "MEDIUM" | "LOW";
@@ -88,14 +85,16 @@ export type ManualTaskPriority = "HIGH" | "MEDIUM" | "LOW";
  * Reason a task was completed without yielding qualifying evidence.
  * Must be explicit and auditable.
  */
-export type ManualTaskCompletionReason =
-  | "EVIDENCE_SUBMITTED"
-  | "DOCUMENT_NOT_FOUND_AFTER_MANUAL_SEARCH"
-  | "ACCESS_STILL_BLOCKED"
-  | "SOURCE_RETURNED_NO_QUALIFYING_RECORD"
-  | "DUPLICATE_DOCUMENT_ALREADY_EXISTS"
-  | "INSUFFICIENT_IDENTIFICATION"
-  | "OTHER_REVIEW_REQUIRED";
+export const manualTaskCompletionReasons = [
+  "EVIDENCE_SUBMITTED",
+  "DOCUMENT_NOT_FOUND_AFTER_MANUAL_SEARCH",
+  "ACCESS_STILL_BLOCKED",
+  "SOURCE_RETURNED_NO_QUALIFYING_RECORD",
+  "DUPLICATE_DOCUMENT_ALREADY_EXISTS",
+  "INSUFFICIENT_IDENTIFICATION",
+  "OTHER_REVIEW_REQUIRED",
+] as const;
+export type ManualTaskCompletionReason = (typeof manualTaskCompletionReasons)[number];
 
 /** A structured search strategy for one specific identifier. */
 export type SearchStrategy = {
@@ -539,6 +538,18 @@ export async function listManualResearchTasks(
   return result.rows.map((r) => fromRow(r as Record<string, unknown>));
 }
 
+export async function getManualResearchTask(
+  taskId: string,
+  organizationId: string,
+  client: Client = db,
+): Promise<ManualResearchTask | null> {
+  const result = await client.execute({
+    sql: "SELECT * FROM manual_research_tasks WHERE id=? AND organization_id=?",
+    args: [taskId, organizationId],
+  });
+  return result.rows[0] ? fromRow(result.rows[0] as Record<string, unknown>) : null;
+}
+
 /**
  * Update task status. Validates tenant ownership.
  * A task may not be COMPLETED without a completedReason.
@@ -551,6 +562,10 @@ export async function updateManualTaskStatus(
   completedReason?: ManualTaskCompletionReason,
   client: Client = db,
 ): Promise<ManualResearchTask> {
+  if (!manualTaskStatuses.includes(newStatus)) throw new Error("MANUAL_TASK_STATUS_INVALID");
+  if (completedReason && !manualTaskCompletionReasons.includes(completedReason)) {
+    throw new Error("MANUAL_TASK_COMPLETION_REASON_INVALID");
+  }
   const row = await client.execute({
     sql: "SELECT * FROM manual_research_tasks WHERE id=? AND organization_id=?",
     args: [taskId, organizationId],
@@ -631,14 +646,36 @@ export async function submitManualEvidence(
   if (!taskRow.rows[0]) throw new Error("MANUAL_TASK_NOT_FOUND_OR_WRONG_TENANT");
 
   const task = fromRow(taskRow.rows[0] as Record<string, unknown>);
+  if (task.operationId !== input.operationId) {
+    throw new Error("MANUAL_TASK_OPERATION_MISMATCH");
+  }
   if (task.depre !== input.depre) {
-    throw new Error(`MANUAL_EVIDENCE_DEPRE_MISMATCH:task=${task.depre}:input=${input.depre}`);
+    throw new Error("MANUAL_EVIDENCE_DEPRE_MISMATCH");
+  }
+  if (!isOfficialSourceUrl(input.officialUrl)) throw new Error("MANUAL_EVIDENCE_OFFICIAL_URL_REQUIRED");
+
+  // PHASE 11 — IDEMPOTENT REPLAY: if the task is already in a terminal state,
+  // return the existing result without creating any side effects.
+  // This is NOT a reopening — it's a safe replay of an already-completed operation.
+  if (task.status === "COMPLETED" || task.status === "CANCELLED") {
+    const { countVerifiedOfficialEvidence } = await import("./autonomous-acquisition");
+    const existingDocs = await listOfficialEvidence(input.operationId, input.organizationId, client);
+    const qualifyingEvidenceCount = countVerifiedOfficialEvidence(existingDocs);
+    const evalRow = await client.execute({
+      sql: "SELECT id FROM opportunity_evaluations WHERE operation_id = ? ORDER BY evaluated_at DESC LIMIT 1",
+      args: [input.operationId],
+    });
+    return {
+      persistenceResults: [{ status: "ALREADY_COMPLETED" }],
+      qualifyingEvidenceCount,
+      evaluationId: evalRow.rows[0] ? String(evalRow.rows[0].id) : null,
+    };
   }
 
   // 2. Build a canonical SourceAcquisitionResult (provider = ANALYST_ASSISTED)
   const acquisitionResult: SourceAcquisitionResult = {
     provider: "ANALYST_ASSISTED",
-    source: input.source,
+    source: task.source,
     sourceId: `manual-${task.sourceId}`,
     route: `manual-${task.route}`,
     requestedIdentifier: input.depre,
@@ -667,7 +704,7 @@ export async function submitManualEvidence(
         documentIdentifier: input.documentIdentifier,
         reference: input.documentReference,
         officialSourceUrl: input.officialUrl,
-        title: `${input.source} — ${input.documentReference}`,
+        title: `${task.source} — ${input.documentReference}`,
         status: input.qualificationStatus ?? "COLLECTED",
         evidenceStrength: input.evidenceStrength ?? "MEDIUM",
         notes: `Evidência submetida por analista via tarefa ${input.taskId}. ${input.evidenceNotes}`,
@@ -675,7 +712,7 @@ export async function submitManualEvidence(
     ],
     canonicalResult: {
       provider: "ANALYST_ASSISTED",
-      source: input.source,
+      source: task.source,
       sourceId: `manual-${task.sourceId}`,
       route: `manual-${task.route}`,
       queryIdentifier: input.depre,
@@ -721,7 +758,7 @@ export async function submitManualEvidence(
       entityId: input.operationId,
       previousStateSummary: {},
       nextStateSummary: {
-        source: input.source,
+        source: task.source,
         url: input.officialUrl,
         reference: input.documentReference,
         candidatesBuilt: candidates.length,
@@ -745,7 +782,12 @@ export async function submitManualEvidence(
   const anyPersisted = persistenceResults.some((r) => r.status === "PERSISTED");
   let qualifyingEvidenceCount = 0;
   let evaluationId: string | null = null;
-  let enrichResult: any = null;
+  type EnrichmentSummary = {
+    blockers: Array<string | { code?: string }>;
+    readyForAnalyst: boolean;
+    opportunityStatus: string;
+  };
+  let enrichResult: EnrichmentSummary | null = null;
 
   if (anyPersisted) {
     const { countVerifiedOfficialEvidence } = await import("./autonomous-acquisition");
@@ -787,8 +829,11 @@ export async function submitManualEvidence(
   }
 
   // Auto-complete if opportunity is ready or primary blocker is resolved, otherwise IN_PROGRESS
-  const isStillBlocked = enrichResult 
-    ? enrichResult.blockers.some((b: any) => task.instructions.targetBlockerCodes.includes(b))
+  const isStillBlocked = enrichResult
+    ? enrichResult.blockers.some((b: string | { code?: string }) => {
+        const blockerCode = typeof b === "string" ? (b as OpportunityBlockerCode) : (b.code as OpportunityBlockerCode | undefined);
+        return blockerCode ? task.instructions.targetBlockerCodes.includes(blockerCode as OpportunityBlockerCode) : false;
+      })
     : true;
   
   const newStatus = isStillBlocked ? "IN_PROGRESS" : "COMPLETED";

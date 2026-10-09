@@ -361,20 +361,21 @@ export class PilotCorpusRepository {
     seedPilotCorpusItems.forEach(item => this.items.set(item.id, item));
   }
 
-  getAll(): PilotCorpusItem[] {
-    return Array.from(this.items.values());
+  getAll(organizationId?: string): PilotCorpusItem[] {
+    return Array.from(this.items.values()).filter((item) => !organizationId || item.organizationId === organizationId);
   }
 
-  getTuningSet(): PilotCorpusItem[] {
-    return Array.from(this.items.values()).filter(item => !item.isRegressionSet);
+  getTuningSet(organizationId?: string): PilotCorpusItem[] {
+    return this.getAll(organizationId).filter(item => !item.isRegressionSet);
   }
 
-  getRegressionSet(): PilotCorpusItem[] {
-    return Array.from(this.items.values()).filter(item => item.isRegressionSet);
+  getRegressionSet(organizationId?: string): PilotCorpusItem[] {
+    return this.getAll(organizationId).filter(item => item.isRegressionSet);
   }
 
-  getById(id: string): PilotCorpusItem | undefined {
-    return this.items.get(id);
+  getById(id: string, organizationId?: string): PilotCorpusItem | undefined {
+    const item = this.items.get(id);
+    return item && (!organizationId || item.organizationId === organizationId) ? item : undefined;
   }
 
   save(item: PilotCorpusItem): PilotCorpusItem {
@@ -383,8 +384,8 @@ export class PilotCorpusRepository {
     return parsed;
   }
 
-  annotateGold(corpusItemId: string, gold: GoldAnnotation): PilotCorpusItem {
-    const item = this.items.get(corpusItemId);
+  annotateGold(corpusItemId: string, gold: GoldAnnotation, organizationId?: string): PilotCorpusItem {
+    const item = this.getById(corpusItemId, organizationId);
     if (!item) throw new Error(`Pilot corpus item ${corpusItemId} not found`);
     const parsedGold = goldAnnotationSchema.parse({ ...gold, corpusItemId });
     const updated: PilotCorpusItem = {

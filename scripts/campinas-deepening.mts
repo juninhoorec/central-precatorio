@@ -1,9 +1,10 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { buildEvidenceCandidates, resolveEvidenceCandidatesForAcquisition, type SourceAcquisitionResult } from "../src/lib/research-pipeline";
 import { listOfficialEvidence } from "../src/lib/autonomous-acquisition";
 import { persistResolvedOfficialEvidence } from "../src/lib/evidence-persistence";
 import { appendAudit } from "../src/lib/audit";
-const c=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});const org="nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
+const c=createClient({url:requireExplicitDatabaseUrl(),authToken:process.env.DATABASE_AUTH_TOKEN});const org="nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const docs=[
  {depre:"0038850-88.2017.8.26.0500",url:"https://portal-api.campinas.sp.gov.br/sites/default/files/publicacoes-dom/dom/1882658638.pdf",ref:"PMC.2021.00051374-90",date:"2021-09-27",entries:["LÚCIA HELENA SILVEIRA DE FREITAS BLANDY / DANIEL KRAHEMBUHL WANDERLEY / PMC.2021.00051374-90","NELSON BARTHELSON / DANIEL KRAHEMBUHL WANDERLEY / PMC.2021.00051365-07"]},
  {depre:"0038850-88.2017.8.26.0500",url:"https://portal-api.campinas.sp.gov.br/sites/default/files/publicacoes-dom/dom/511454721404472145114514.pdf",ref:"PMC.2023.00023499-09",date:"2023-04-14",entries:["LUCIA HELENA SILVEIRA DE FREITAS BLANDY / DANIEL KRAHEMBUHL WANDERLEY / PMC.2023.00023499-09"]},

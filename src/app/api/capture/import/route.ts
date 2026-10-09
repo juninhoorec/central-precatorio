@@ -3,6 +3,8 @@ import { z } from "zod";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { requireTenantPermission } from "@/lib/tenant";
+import { createDatabaseClient } from "@/lib/database-config";
+import { rateLimit } from "@/lib/rate-limit";
 import { appendAudit } from "@/lib/audit";
 import {
   createOperation,
@@ -122,6 +124,9 @@ export async function POST(request: Request) {
       request.headers,
       "operation:write",
     );
+    if (!(await rateLimit(request, "capture-import", 5, 600, `${tenant.organizationId}:${tenant.userId}`))) {
+      return NextResponse.json({ error: "Limite de importações atingido." }, { status: 429 });
+    }
     let input: z.infer<typeof schema>, bytes: Uint8Array;
     if (request.headers.get("content-type")?.includes("multipart/form-data")) {
       const form = await request.formData(),
@@ -271,13 +276,7 @@ export async function POST(request: Request) {
         const rows = sheetRows(bytes, input.fileName, input.sheet);
         csv = toCsv(rows);
       }
-      const profileDb = await import("@libsql/client").then(
-        ({ createClient }) =>
-          createClient({
-            url: process.env.DATABASE_URL || "file:central-precatorios.db",
-            authToken: process.env.DATABASE_AUTH_TOKEN,
-          }),
-      );
+      const profileDb = createDatabaseClient();
       const profileRow = await profileDb
         .execute({
           sql: "SELECT profile_json FROM acquisition_profiles WHERE organization_id=?",

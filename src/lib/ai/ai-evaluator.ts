@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type PilotCorpusItem, type GoldAnnotation } from "./ai-pilot-corpus";
+import { type PilotCorpusItem } from "./ai-pilot-corpus";
 import { creditorExtractionTask, type CreditorExtractionOutput } from "./ai-tasks/creditor-extraction";
 
 export const evaluationClassificationSchema = z.enum([

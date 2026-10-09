@@ -22,11 +22,9 @@
 import { createHash } from "node:crypto";
 import { createClient, type Client } from "@libsql/client";
 import { initializeAutonomousAcquisition } from "./autonomous-acquisition";
+import { createDatabaseClient } from "./database-config";
 
-const db = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const db = createDatabaseClient();
 
 /** Canonical source result codes that should generate a manual research task. */
 export const MANUAL_BLOCKER_RESULTS = [

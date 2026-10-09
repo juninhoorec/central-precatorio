@@ -1,16 +1,18 @@
 import { checkOllamaHealth, defaultConfig, type AIHealthStatus } from "./ollama-provider";
-import { type PilotCorpusItem, globalPilotRepository } from "./ai-pilot-corpus";
+import { globalPilotRepository } from "./ai-pilot-corpus";
 import { evaluateCorpusItem, type PilotScorecard, type TaskEvaluationResult } from "./ai-evaluator";
 
 export interface AIExperimentConfig {
   experimentId: string; // e.g. "CP24-PILOT-001"
   promptVersion: string; // "v1" | "v2"
   useRegressionSetOnly?: boolean;
+  organizationId?: string;
 }
 
 export type ReadinessGateStatus = "PASSED" | "BLOCKED";
 
 export interface AIExperimentResult {
+  runId?: string;
   experimentId: string;
   evaluatedAt: string;
   readinessGateStatus: ReadinessGateStatus;
@@ -42,8 +44,8 @@ export interface AIExperimentResult {
 // In-memory simple SHA256 / string key cache for experiment runs
 const aiRunCache = new Map<string, TaskEvaluationResult>();
 
-function computeCacheKey(taskId: string, promptVersion: string, corpusItemId: string): string {
-  return `${defaultConfig.model}:${taskId}:${promptVersion}:${corpusItemId}`;
+function computeCacheKey(taskId: string, promptVersion: string, corpusItemId: string, organizationId = "legacy"): string {
+  return `${organizationId}:${defaultConfig.model}:${taskId}:${promptVersion}:${corpusItemId}`;
 }
 
 export async function runRealPilotExperiment(
@@ -55,7 +57,7 @@ export async function runRealPilotExperiment(
   const health = await checkOllamaHealth(defaultConfig);
   if (health.status !== "READY") {
     // STOP REAL INFERENCE. Do not substitute mock responses pretending they came from Qwen.
-    const allItems = globalPilotRepository.getAll();
+    const allItems = globalPilotRepository.getAll(config.organizationId);
     return {
       experimentId: config.experimentId,
       evaluatedAt: new Date().toISOString(),
@@ -87,8 +89,8 @@ export async function runRealPilotExperiment(
 
   // 2. Select Pilot Items (Tuning or Regression or Full)
   const items = config.useRegressionSetOnly
-    ? globalPilotRepository.getRegressionSet()
-    : globalPilotRepository.getAll();
+    ? globalPilotRepository.getRegressionSet(config.organizationId)
+    : globalPilotRepository.getAll(config.organizationId);
 
   let cacheHits = 0;
   let newInferences = 0;
@@ -96,7 +98,7 @@ export async function runRealPilotExperiment(
   const results: Array<{ corpusItemId: string; itemTitle: string; scenarioType: string; taskResult: TaskEvaluationResult }> = [];
 
   for (const item of items) {
-    const cacheKey = computeCacheKey("CREDITOR_CANDIDATE_EXTRACTION", config.promptVersion, item.id);
+    const cacheKey = computeCacheKey("CREDITOR_CANDIDATE_EXTRACTION", config.promptVersion, item.id, config.organizationId);
     let taskResult: TaskEvaluationResult;
 
     if (aiRunCache.has(cacheKey)) {

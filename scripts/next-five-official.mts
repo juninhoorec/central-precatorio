@@ -1,10 +1,11 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { resolveEvidenceCandidatesForAcquisition, type SourceAcquisitionResult } from "../src/lib/research-pipeline";
 import { listOfficialEvidence } from "../src/lib/autonomous-acquisition";
 import { persistResolvedOfficialEvidence } from "../src/lib/evidence-persistence";
 import { appendAudit } from "../src/lib/audit";
 
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const organizationId = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const cases = [
   { depre: "7007091-55.2015.8.26.0500", municipality: "Campinas", url: "https://portal-api.campinas.sp.gov.br/sites/default/files/publicacoes-dom/dom/511454721404472145114514.pdf", date: "2023-04-14", ref: "PMC.2023.00018771-11; PMC.2023.00018774-64; PMC.2023.00018773-83; PMC.2023.00018777-15", entries: ["Claudia Poli de Almeida Barea Teixeira / Carlos Eduardo de Oliveira / PMC.2023.00018771-11", "Gabriela Barea Teixeira / Carlos Eduardo de Oliveira / PMC.2023.00018774-64", "Ivelise Poli Barea / Carlos Eduardo de Oliveira / PMC.2023.00018773-83", "Guilherme Barea Filho / Carlos Eduardo de Oliveira / PMC.2023.00018777-15"] },

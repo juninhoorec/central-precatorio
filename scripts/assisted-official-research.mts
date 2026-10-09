@@ -1,9 +1,10 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { buildEvidenceCandidates, resolveEvidenceCandidatesForAcquisition, type SourceAcquisitionResult } from "../src/lib/research-pipeline";
 import { listOfficialEvidence } from "../src/lib/autonomous-acquisition";
 import { persistResolvedOfficialEvidence } from "../src/lib/evidence-persistence";
 import { appendAudit } from "../src/lib/audit";
-const c=createClient({url:process.env.DATABASE_URL||"file:central-precatorios.db",authToken:process.env.DATABASE_AUTH_TOKEN});const org="nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
+const c=createClient({url:requireExplicitDatabaseUrl(),authToken:process.env.DATABASE_AUTH_TOKEN});const org="nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const official=[
  {depre:"0038850-88.2017.8.26.0500",url:"https://portal-api.campinas.sp.gov.br/sites/default/files/publicacoes-dom/dom/511454721404472145114514.pdf",reference:"PMC.2023.00023499-09",title:"Diário Oficial de Campinas — proposta de acordo deferida",raw:"Registro oficial relaciona o DEPRE a titular/advogado e processo SEI; a publicação contém mais de uma entrada histórica para o mesmo DEPRE."},
  {depre:"0165056-11.2021.8.26.0500",url:"https://portal-adm.campinas.sp.gov.br/sites/default/files/publicacoes-dom/dom/561915106409510645619126.pdf",reference:"PMC.2023.00075698-85",title:"Diário Oficial de Campinas — ordem cronológica DEPRE",raw:"Registro oficial relaciona o processo DEPRE a Sebastião Gonçalves de Morais, advogado Luiz Carlos Lima e processo SEI."},

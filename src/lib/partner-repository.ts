@@ -1,11 +1,9 @@
 import { createClient, type Client } from "@libsql/client";
+import { createDatabaseClient } from "./database-config";
 
 export const PARTNER_CONSENT_VERSION = "2026-09-06";
 
-const client = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const client = createDatabaseClient();
 
 export type PartnerInput = {
   idempotencyKey: string;

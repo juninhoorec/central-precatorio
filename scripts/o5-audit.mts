@@ -1,6 +1,7 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { calculateOperationalKpis } from "../src/lib/operational-kpis";
-const c = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const c = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const org = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const kpis = await calculateOperationalKpis(c, org);
 const source = await c.execute({ sql: "SELECT source, COUNT(*) n FROM audit_logs WHERE organization_id=? AND action='ACQUISITION_JOB_PROCESSED' GROUP BY source", args: [org] });

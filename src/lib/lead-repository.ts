@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@libsql/client";
 import type { LeadInput } from "./lead-schema";
+import { createDatabaseClient } from "./database-config";
 
 export type StoredLead = LeadInput & {
   id: string;
@@ -9,10 +10,7 @@ export type StoredLead = LeadInput & {
   createdAt: string;
   status: "NOVO";
 };
-const client = createClient({
-  url: process.env.DATABASE_URL || "file:central-precatorios.db",
-  authToken: process.env.DATABASE_AUTH_TOKEN,
-});
+const client = createDatabaseClient();
 let initialized: Promise<void> | undefined;
 function initialize() {
   initialized ??= client

@@ -1,6 +1,7 @@
+import { requireExplicitDatabaseUrl } from "./database-target.mjs";
 import { createClient } from "@libsql/client";
 import { initializeAutomation, runSourceAcquisitionJobOnce } from "../src/lib/automation-service";
-const client = createClient({ url: process.env.DATABASE_URL || "file:central-precatorios.db", authToken: process.env.DATABASE_AUTH_TOKEN });
+const client = createClient({ url: requireExplicitDatabaseUrl(), authToken: process.env.DATABASE_AUTH_TOKEN });
 const organizationId = "nIGADhUkSbiSBSsPl4z08FQ2qIaH3E0u";
 const operationId = "d9f156b3-a743-4591-b0cf-d9626f87086f";
 await initializeAutomation(client);
