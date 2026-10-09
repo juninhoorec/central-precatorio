@@ -35,6 +35,7 @@ import {
   type AcquisitionProfile,
 } from "@/lib/lead-qualification";
 import type { DatasetProfile } from "@/lib/tjsp-import";
+import { isInitialDepreStock } from "@/lib/initial-stock";
 
 type Operation = {
   id: string;
@@ -1299,7 +1300,7 @@ const tabs = [
 ];
 const money = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const isInitial73 = (item: Operation) => item.workflow.inventory.origin === "INITIAL_73";
+const isInitial73 = (item: Operation) => isInitialDepreStock(item);
 const aiValidationLabels = {
   PENDING: "PENDENTE",
   RECONFIRMED: "RECONFIRMADO",
