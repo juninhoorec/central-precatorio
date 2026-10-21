@@ -35,6 +35,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.production.example
 data/leads.json
 data/leads.json.tmp
 *.db
