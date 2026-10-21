@@ -1744,6 +1744,7 @@ export default function OperationsClient() {
   const overdue = tasks.filter(
     (t) => !t.done && t.due && t.due < new Date().toISOString().slice(0, 10),
   );
+  const isFilaView = view === "Fila DEPRE (907)";
   function exportCsv() {
     const cell = (v: unknown) =>
       '"' +
@@ -1811,7 +1812,7 @@ export default function OperationsClient() {
         <Link href="/conta">Conta e organização</Link>
       </aside>
       <section className={styles.main}>
-        <div className={styles.heading}>
+        {!isFilaView && <div className={styles.heading}>
           <div>
             <small>UMA OPORTUNIDADE · UM HISTÓRICO · UM PRÓXIMO PASSO</small>
             <h1>{view}</h1>
@@ -1839,7 +1840,7 @@ export default function OperationsClient() {
               <Plus size={18} /> Novo lead
             </button>
           </div>
-        </div>
+        </div>}
         {error && (
           <div role="alert" className={styles.error}>
             {error}{" "}
@@ -1853,12 +1854,12 @@ export default function OperationsClient() {
             {message}
           </p>
         )}
-        <div className={styles.metricScope}>
+        {!isFilaView && <div className={styles.metricScope}>
           {demoMode
             ? "DADOS DE DEMONSTRAÇÃO — totais abaixo consideram somente registros sintéticos."
             : "MÉTRICAS DE PRODUÇÃO — registros de demonstração excluídos."}
-        </div>
-        <div className={styles.metrics}>
+        </div>}
+        {!isFilaView && <div className={styles.metrics}>
           <article>
             <small>{demoMode ? "Operações demonstrativas" : "Operações de produção"}</small>
             <strong>{dashboardItems.length}</strong>
@@ -1875,7 +1876,7 @@ export default function OperationsClient() {
             <small>Propostas/ofertas registradas</small>
             <strong>{dashboardItems.reduce((s, o) => s + o.workflow.negotiations.length, 0)}</strong>
           </article>
-        </div>
+        </div>}
         {view === "Fila DEPRE (907)" ? (
           <section className={styles.card}>
             <Pilot907Panel />

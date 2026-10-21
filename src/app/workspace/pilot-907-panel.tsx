@@ -274,7 +274,7 @@ export default function Pilot907Panel() {
   const totalValor = items.reduce((s, r) => s + (r.valor || 0), 0);
 
   return (
-    <div className={styles.captureBox} style={{ position: "relative" }}>
+    <div className={`${styles.captureBox} ${styles.pilotShell}`} style={{ position: "relative" }}>
 
       {/* ── CABEÇALHO ────────────────────────────────────────────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
