@@ -14,6 +14,7 @@ import {
 } from "@/lib/autonomous-acquisition";
 import { isOfficialSourceUrl } from "@/lib/acquisition-sources";
 import { evaluateAcquisitionReadiness } from "@/lib/lead-qualification";
+import { evaluateCommercialMinimum } from "@/lib/commercial-qualification";
 
 export const runtime = "nodejs";
 
@@ -89,6 +90,36 @@ export async function GET(
 
     const verifiedCount = countVerifiedOfficialEvidence(officialEvidence);
     const profile = await getAcquisitionProfile(tenant.organizationId);
+    const minimumQualification = evaluateCommercialMinimum({
+      operationId: id,
+      depre: operation.workflow.credit.numeroProcessoDEPRE,
+      creditorName: operation.workflow.client.name,
+      creditorVerified:
+        operation.workflow.creditorResolution.state === "CREDOR_IDENTIFICADO" ||
+        operation.workflow.creditorResolution.state === "CREDOR_CORROBORADO",
+      identityConflict:
+        operation.workflow.creditorResolution.state === "CONFLITO_DE_IDENTIDADE",
+      amount: operation.nominal,
+      amountSource: operation.workflow.credit.sourceUrl || operation.source || "",
+      debtor: operation.debtor || operation.workflow.credit.municipality,
+      sourceBlocked: sourceEvents.some((event) =>
+        ["SOURCE_BLOCKED", "CAPTCHA_REQUIRED", "AUTH_REQUIRED", "SOURCE_UNAVAILABLE"].includes(event.status),
+      ),
+      // A URL stored in the database is not treated as accessible without an explicit link check.
+      documents: officialEvidence.map((document) => ({
+        id: document.id,
+        operationId: document.operationId,
+        depre: operation.workflow.credit.numeroProcessoDEPRE,
+        creditorName: operation.workflow.client.name,
+        sourceUrl: document.sourceUrl,
+        title: document.title,
+        documentIdentifier: document.documentIdentifier,
+        status: document.status,
+        evidenceStrength: document.evidenceStrength,
+        linkAccessible: false,
+        contentFingerprint: document.contentFingerprint,
+      })),
+    });
 
     const readiness = evaluateAcquisitionReadiness({
       creditorName: operation.workflow.client.name,
@@ -143,6 +174,8 @@ export async function GET(
       identityConfidence: operation.workflow.creditorResolution.confidence,
       conflicts: readiness.reasons.filter((r) => r === "IDENTITY_CONFLICT"),
       status: readiness.state,
+      minimumQualification: minimumQualification.state,
+      minimumQualificationReasons: minimumQualification.reasons,
       nextAction: readiness.nextAction,
       evidenceLinks: officialEvidence
         .filter(
@@ -168,6 +201,7 @@ export async function GET(
         contacts,
         sourceEvents,
         readiness,
+        minimumQualification,
         summaryText,
       },
       { headers: { "cache-control": "no-store" } },

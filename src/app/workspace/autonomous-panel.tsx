@@ -111,6 +111,14 @@ type CaseDetailData = {
     ready: boolean;
     nextAction: string;
   };
+  minimumQualification: {
+    state: string;
+    approved: boolean;
+    reasons: string[];
+    criteria: Array<{ key: string; ok: boolean; detail: string }>;
+    qualifyingDocuments: Array<{ id: string; title: string; sourceUrl: string }>;
+    nextAction: string;
+  };
   summaryText: {
     header: string;
     creditor: string;
@@ -127,6 +135,8 @@ type CaseDetailData = {
     identityConfidence: string;
     conflicts: string[];
     status: string;
+    minimumQualification: string;
+    minimumQualificationReasons: string[];
     nextAction: string;
     evidenceLinks: Array<{
       title: string;
@@ -846,6 +856,26 @@ export default function AutonomousPanel() {
                           <small>DEVEDORA</small>
                           <strong>{caseDetail.summaryText.debtor}</strong>
                         </article>
+                      </div>
+
+                      <div className={styles.notice}>
+                        <ShieldCheck />
+                        <div style={{ width: "100%" }}>
+                          <b>QUALIFICAÇÃO MÍNIMA COMERCIAL</b>
+                          <p style={{ margin: "6px 0" }}>
+                            {caseDetail.minimumQualification.approved
+                              ? "Aprovada: titular, valor, município e dois ofícios distintos foram comprovados."
+                              : `Pendente: ${caseDetail.minimumQualification.nextAction}`}
+                          </p>
+                          <strong>{caseDetail.minimumQualification.state}</strong>
+                          <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
+                            {caseDetail.minimumQualification.qualifyingDocuments.slice(0, 2).map((doc, index) => (
+                              <a key={doc.id} href={doc.sourceUrl} target="_blank" rel="noreferrer">
+                                Ofício {index + 1}: {doc.title}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
                       <h3>Links de Evidência e Consulta Oficial</h3>

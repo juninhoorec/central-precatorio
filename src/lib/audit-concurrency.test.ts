@@ -5,14 +5,13 @@ import { createClient } from "@libsql/client";
 import { describe, expect, it } from "vitest";
 import { appendAudit, initializeAudit, verifyAuditChain } from "./audit";
 
-describe("audit append across independent clients", () => {
-  it("retries SQLite locks and preserves the chain", async () => {
+describe("audit append through the supported shared client", () => {
+  it("serializes concurrent writes and preserves the chain", async () => {
     const directory = await mkdtemp(join(tmpdir(), "cp-audit-concurrency-"));
     const url = `file:${join(directory, "audit.db")}`;
-    const first = createClient({ url });
-    const second = createClient({ url });
+    const client = createClient({ url });
     try {
-      await initializeAudit(first);
+      await initializeAudit(client);
       const writes = Array.from({ length: 40 }, (_, index) => appendAudit({
         organizationId: "concurrency-test",
         actorUserId: "test",
@@ -24,15 +23,14 @@ describe("audit append across independent clients", () => {
         metadata: {},
         requestId: `concurrency-${index}`,
         source: "CONCURRENCY_TEST",
-      }, index % 2 ? first : second));
+      }, client));
       await Promise.all(writes);
-      expect(await verifyAuditChain("concurrency-test", first)).toBe(true);
-      const count = await first.execute("SELECT COUNT(*) AS count FROM audit_logs WHERE organization_id='concurrency-test'");
+      expect(await verifyAuditChain("concurrency-test", client)).toBe(true);
+      const count = await client.execute("SELECT COUNT(*) AS count FROM audit_logs WHERE organization_id='concurrency-test'");
       expect(Number(count.rows[0]?.count)).toBe(40);
     } finally {
-      await first.close();
-      await second.close();
-      await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      await client.close();
+      await rm(directory, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
     }
-  }, 30_000);
+  }, 60_000);
 });

@@ -1,0 +1,32 @@
+name: CP production backup
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Export tenant backup
+        env:
+          DATABASE_URL: ${{ secrets.CP_DATABASE_URL }}
+          DATABASE_AUTH_TOKEN: ${{ secrets.CP_DATABASE_AUTH_TOKEN }}
+          CP_BACKUP_ORGANIZATION_ID: ${{ secrets.CP_BACKUP_ORGANIZATION_ID }}
+          CP_BACKUP_DIRECTORY: backups
+        run: npx tsx scripts/backup-production.mts
+      - name: Publish backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cp-production-backup-${{ github.run_id }}
+          path: backups/
+          retention-days: 30

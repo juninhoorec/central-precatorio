@@ -92,8 +92,53 @@ export async function listAudit(organizationId:string, entityType?:string, entit
 }
 
 export async function verifyAuditChain(organizationId:string, client:Client=db){
-  await initializeAudit(client); const result=await client.execute({sql:"SELECT * FROM audit_logs WHERE organization_id=? ORDER BY rowid ASC",args:[organizationId]}); let previous="";
-  for(const r of result.rows){const payload={id:String(r.id),organizationId:String(r.organization_id),actorUserId:String(r.actor_user_id),action:String(r.action),entityType:String(r.entity_type),entityId:String(r.entity_id),previousStateSummary:JSON.parse(String(r.previous_state_summary)),nextStateSummary:JSON.parse(String(r.next_state_summary)),metadata:JSON.parse(String(r.metadata)),requestId:String(r.request_id),source:String(r.source),timestamp:String(r.timestamp),previousEventHash:String(r.previous_event_hash)};const hash=createHash("sha256").update(stable(payload)).digest("hex");if(String(r.previous_event_hash)!==previous||String(r.event_hash)!==hash)return false;previous=String(r.event_hash)} return true;
+  return (await inspectAuditChain(organizationId, client)).valid;
+}
+
+export type AuditChainIssue = {
+  rowid: number;
+  eventId: string;
+  kind: "PREVIOUS_HASH_MISMATCH" | "EVENT_HASH_MISMATCH";
+  storedPreviousHash: string;
+  expectedPreviousHash: string;
+  storedEventHash: string;
+  expectedEventHash: string;
+};
+
+export type AuditChainInspection = {
+  valid: boolean;
+  eventCount: number;
+  issues: AuditChainIssue[];
+  missingPredecessors: Array<{ rowid: number; eventId: string; previousHash: string }>;
+};
+
+/**
+ * Strict, read-only audit-chain inspection. It reports the first broken links
+ * and does not repair, skip, reorder, or reinterpret historical events.
+ */
+export async function inspectAuditChain(organizationId:string, client:Client=db):Promise<AuditChainInspection>{
+  await initializeAudit(client);
+  const result=await client.execute({sql:"SELECT rowid,* FROM audit_logs WHERE organization_id=? ORDER BY rowid ASC",args:[organizationId]});
+  const rows=result.rows as Record<string,unknown>[];
+  const hashes=new Set(rows.map(row=>String(row.event_hash)));
+  let previous="";
+  const issues:AuditChainIssue[]=[];
+  const missingPredecessors:AuditChainInspection["missingPredecessors"]=[];
+  for(const row of rows){
+    const payload={id:String(row.id),organizationId:String(row.organization_id),actorUserId:String(row.actor_user_id),action:String(row.action),entityType:String(row.entity_type),entityId:String(row.entity_id),previousStateSummary:JSON.parse(String(row.previous_state_summary)),nextStateSummary:JSON.parse(String(row.next_state_summary)),metadata:JSON.parse(String(row.metadata)),requestId:String(row.request_id),source:String(row.source),timestamp:String(row.timestamp),previousEventHash:String(row.previous_event_hash)};
+    const expectedEventHash=createHash("sha256").update(stable(payload)).digest("hex");
+    const storedPreviousHash=String(row.previous_event_hash);
+    const storedEventHash=String(row.event_hash);
+    if(storedPreviousHash!==previous||storedEventHash!==expectedEventHash){
+      if(storedPreviousHash!==previous){
+        issues.push({rowid:Number(row.rowid),eventId:String(row.id),kind:"PREVIOUS_HASH_MISMATCH",storedPreviousHash,expectedPreviousHash:previous,storedEventHash,expectedEventHash});
+        if(storedPreviousHash!==""&&!hashes.has(storedPreviousHash)) missingPredecessors.push({rowid:Number(row.rowid),eventId:String(row.id),previousHash:storedPreviousHash});
+      }
+      if(storedEventHash!==expectedEventHash) issues.push({rowid:Number(row.rowid),eventId:String(row.id),kind:"EVENT_HASH_MISMATCH",storedPreviousHash,expectedPreviousHash:previous,storedEventHash,expectedEventHash});
+    }
+    previous=storedEventHash;
+  }
+  return {valid:issues.length===0,eventCount:rows.length,issues,missingPredecessors};
 }
 
 /** Idempotency guard: returns true if an audit entry for this requestId already exists. */

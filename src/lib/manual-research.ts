@@ -27,7 +27,7 @@
  */
 
 import { createHash, randomUUID } from "node:crypto";
-import { createClient, type Client } from "@libsql/client";
+import type { Client } from "@libsql/client";
 import { appendAudit } from "./audit";
 import { buildEvidenceCandidates, resolveEvidenceCandidatesForAcquisition } from "./research-pipeline";
 import { listOfficialEvidence } from "./autonomous-acquisition";
@@ -254,7 +254,8 @@ function derivePriority(blockerCodes: readonly OpportunityBlockerCode[]): Manual
  */
 function officialRouteForSource(source: string, route: string): { name: string; url: string } {
   const normalized = source.toUpperCase();
-  if (normalized.includes("ESAJ") || normalized.includes("TJSP_ESAJ") || route.includes("esaj")) {
+  const compact = normalized.replace(/[^A-Z0-9]/g, "");
+  if (compact.includes("ESAJ") || compact.includes("TJSPESAJ") || route.toLowerCase().includes("esaj")) {
     return { name: "TJSP / e-SAJ", url: "https://esaj.tjsp.jus.br/cpopg/open.do" };
   }
   if (normalized.includes("DEPRE") || normalized.includes("CAC") || route.includes("cac")) {

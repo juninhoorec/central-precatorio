@@ -189,6 +189,42 @@ describe("permitted acquisition source adapters", () => {
     expect(failed.failureReason).toContain("connection refused");
   });
 
+  it("classifies an aborted request as unavailable without treating it as no result", async () => {
+    const result = await djenAdapter.lookup({
+      processNumber: validCnj,
+      fetcher: vi.fn(async (_input, init) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        signal?.dispatchEvent(new Event("abort"));
+        throw new DOMException("The operation was aborted", "AbortError");
+      }),
+    });
+    expect(result.status).toBe("SOURCE_UNAVAILABLE");
+    expect(result.requestAttempted).toBe(true);
+    expect(result.resultCount).toBe(0);
+    expect(result.status).not.toBe("NO_RESULT");
+  });
+
+  it("keeps the queried identifier as the process key and never infers a DEPRE from returned communications", async () => {
+    const origin = "0023064-84.2017.8.26.0053";
+    const result = await djenAdapter.lookup({
+      processNumber: origin,
+      fetcher: vi.fn(async () => Response.json({
+        status: "success",
+        items: [{
+          id: "origin-1",
+          hash: "origin-hash",
+          numero_processo: normalizeCnjProcessNumber(origin),
+          texto: "CREDOR: Pessoa Sintética; processo originário",
+          destinatarios: [{ nome: "Pessoa Sintética", polo: "A" }],
+        }],
+      })),
+    });
+    expect(result.queryId).toBe(normalizeCnjProcessNumber(origin));
+    expect(result.originalIdentifier).toBe(origin);
+    expect(result.communications[0]?.processNumber).toBe(normalizeCnjProcessNumber(origin));
+    expect(result.communications[0]?.partyObservations[0]?.name).toBe("Pessoa Sintética");
+  });
+
   it("deduplicates identical communications by hash and decodes explicit role evidence", async () => {
     const communication = {
       id: 1,

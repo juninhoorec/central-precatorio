@@ -51,6 +51,18 @@ next-env.d.ts
 # Controlled local CAC/TJSP source corpus
 /.local-data/
 
+# Generated operational exports and sensitive local evidence
+/backups/
+/outputs/
+/evidence/
+/data/*.json
+/data/*.jsonl
+/data/*.csv
+/data/*.zip
+/data/*.xlsx
+/scripts/__pycache__/
+vitest-full-*.log
+
 
 # Controlled local CAC/TJSP source corpus
 /.local-data/

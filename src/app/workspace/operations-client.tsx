@@ -28,6 +28,8 @@ import AuditTrail from "./audit-trail";
 import SourceMonitorPanel from "./source-monitor-panel";
 import BenchmarkPanel from "./benchmark-panel";
 import AutonomousPanel from "./autonomous-panel";
+import Pilot907Panel from "./pilot-907-panel";
+import OperationalControlPanel from "./operational-control-panel";
 import {
   defaultAcquisitionProfile,
   evaluateLead,
@@ -1557,7 +1559,7 @@ export default function OperationsClient() {
     [tab, setTab] = useState(tabs[0]),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState(""),
-    [view, setView] = useState("Operações"),
+    [view, setView] = useState("Fila DEPRE (907)"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true),
@@ -1786,12 +1788,14 @@ export default function OperationsClient() {
         </div>
         <nav>
           {[
+            "Fila DEPRE (907)",
             "Captação Autônoma",
             "Captação",
             "Operações",
             "Pipeline",
             "Agenda",
             "Relatórios",
+            "Controle operacional",
             "Integrações",
           ].map((v) => (
             <button
@@ -1812,7 +1816,9 @@ export default function OperationsClient() {
             <small>UMA OPORTUNIDADE · UM HISTÓRICO · UM PRÓXIMO PASSO</small>
             <h1>{view}</h1>
             <p>
-              {view === "Captação Autônoma"
+              {view === "Fila DEPRE (907)"
+                ? "976 precatórios destrinchados — Titular, Valor, Município, Advogado/OAB e acesso direto aos 2 ofícios oficiais no TJSP/e-SAJ. 100% público, sem login de ninguém."
+                : view === "Captação Autônoma"
                 ? "Motor de aquisição e qualificação contínua de precatórios paulistas."
                 : view === "Captação"
                 ? "Encontre e priorize credores de precatórios paulistas com evidências rastreáveis."
@@ -1870,7 +1876,11 @@ export default function OperationsClient() {
             <strong>{dashboardItems.reduce((s, o) => s + o.workflow.negotiations.length, 0)}</strong>
           </article>
         </div>
-        {view === "Captação Autônoma" ? (
+        {view === "Fila DEPRE (907)" ? (
+          <section className={styles.card}>
+            <Pilot907Panel />
+          </section>
+        ) : view === "Captação Autônoma" ? (
           <section className={styles.card}>
             <AutonomousPanel />
           </section>
@@ -1952,6 +1962,12 @@ export default function OperationsClient() {
                 }
               </p>
             ))}
+          </section>
+        ) : view === "Controle operacional" ? (
+          <section className={styles.card}>
+            <h2>Painel de produtividade, SLA e qualidade</h2>
+            <p>Indicadores calculados sobre os registros da organização ativa, com histórico centralizado.</p>
+            <OperationalControlPanel items={dashboardItems} />
           </section>
         ) : (
           <>
