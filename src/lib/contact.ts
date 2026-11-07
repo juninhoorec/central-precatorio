@@ -1,8 +1,8 @@
 export const CONTACT = {
   whatsappDisplay: "(11) 94816-9215",
   whatsappNumber: "5511948169215",
-  businessEmail: "neisegon@gmail.com",
-  initialAnalyst: "Indiamara Camargo",
+  businessEmail: "zfdcomercial@gmail.com",
+  initialAnalyst: "Mara Camargo",
   instagramUrl: "https://www.instagram.com/centralprecatoriosbr/",
   instagramHandle: "@centralprecatoriosbr",
 } as const;

@@ -5,7 +5,7 @@ import { ArrowLeft, BadgeCheck, Bell, BriefcaseBusiness, CheckCircle2, ChevronRi
 import styles from "./workspace.module.css";
 
 const cases = [
-  {id:"CP-0826",debtor:"Estado de São Paulo",kind:"Alimentar",value:420000,stage:"Diligência",score:86,sla:"1h 34m",owner:"Indiamara",docs:4},
+  {id:"CP-0826",debtor:"Estado de São Paulo",kind:"Alimentar",value:420000,stage:"Diligência",score:86,sla:"1h 34m",owner:"Mara Camargo",docs:4},
   {id:"CP-0819",debtor:"Município de Campinas",kind:"Comum",value:275000,stage:"Pré-análise",score:72,sla:"3h 12m",owner:"Equipe CP",docs:2},
   {id:"CP-0804",debtor:"INSS · TRF3",kind:"Alimentar",value:680000,stage:"Proposta",score:91,sla:"Hoje",owner:"Núcleo jurídico",docs:6},
 ] as const;
@@ -15,7 +15,7 @@ export default function WorkspaceDemo(){
  const completion=useMemo(()=>Math.round(checks.filter(Boolean).length/checks.length*100),[checks]);
  return <main className={styles.app}>
   <aside><Link href="/" className={styles.back}><ArrowLeft/> Site CP</Link><div className={styles.product}><b>CP</b><span>OPPORTUNITY OS<small>AMBIENTE SANDBOX</small></span></div><nav><a className={styles.on}><LayoutDashboard/>Visão geral</a><a><BriefcaseBusiness/>Oportunidades <i>3</i></a><a><Gauge/>Pipeline</a><a><FileText/>Documentos</a><a><Users/>Parceiros</a><a><CircleDollarSign/>Growth</a></nav><p>Simulação local. Nenhuma proposta, assinatura ou movimentação financeira é real.</p></aside>
-  <section className={styles.main}><header><div><small>WORKSPACE / OPORTUNIDADES</small><h1>Central de operações</h1></div><div><button aria-label="Pesquisar"><Search/></button><button aria-label="Notificações"><Bell/></button><span>IC</span></div></header>
+  <section className={styles.main}><header><div><small>WORKSPACE / OPORTUNIDADES</small><h1>Central de operações</h1></div><div><button aria-label="Pesquisar"><Search/></button><button aria-label="Notificações"><Bell/></button><span>MC</span></div></header>
   <div className={styles.gates}><ShieldCheck/><b>Sandbox operacional</b><span>KYC, assinatura, pagamento e protocolo dependem de integrações homologadas.</span></div>
   <div className={styles.metrics}>{[["Em análise","3"],["Valor nominal","R$ 1,37 mi"],["SLA em risco","1"],["Docs completos","33%"]].map(x=><article key={x[0]}><small>{x[0]}</small><strong>{x[1]}</strong></article>)}</div>
   <div className={styles.workspace}><div className={styles.queue}><div className={styles.queueHead}><b>Fila priorizada</b><button>Filtros</button></div>{cases.map((c,i)=><button onClick={()=>{setSelected(i);setTab("Resumo")}} className={i===selected?styles.selected:""} key={c.id}><div><b>{c.id}</b><span>{c.stage}</span></div><strong>{c.debtor}</strong><small>{c.kind} · {c.value.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0})}</small><footer><span>Score {c.score}</span><span><Clock3/> {c.sla}</span><ChevronRight/></footer></button>)}</div>
@@ -24,6 +24,6 @@ export default function WorkspaceDemo(){
    {tab==="Diligência"&&<div className={styles.panel}><h3>Checklist de diligência</h3>{["Identificação do titular","Ofício requisitório","Trânsito em julgado","Cálculo atualizado","Certidão de cessões e penhoras","Honorários e procuração"].map((x,i)=><label className={styles.check} key={x}><input type="checkbox" checked={checks[i]} onChange={()=>setChecks(v=>v.map((c,j)=>j===i?!c:c))}/><span>{checks[i]?<CheckCircle2/>:<Clock3/>}{x}</span><small>{checks[i]?"Validado":"Pendente"}</small></label>)}</div>}
    {tab==="Economia"&&<div className={styles.panel}><h3>Cenário vinculado</h3><div className={styles.facts}><span><small>Aquisição simulada</small><b>R$ 285.000</b></span><span><small>Custos estimados</small><b>R$ 18.500</b></span><span><small>Recebimento líquido</small><b>R$ 405.000</b></span><span><small>ROI projetado</small><b>33,4%</b></span></div><Link href="/economia-operacao" className={styles.primary}>Abrir calculadora completa</Link></div>}
    {tab==="Propostas"&&<div className={styles.panel}><h3>Propostas indicativas</h3><div className={styles.proposal}><BadgeCheck/><div><b>R$ 285.000 · pagamento à vista</b><small>Rascunho interno · não enviado · não vinculante</small></div><button>Revisar</button></div><button className={styles.primary}>Criar novo rascunho</button></div>}
-   {tab==="Auditoria"&&<div className={styles.panel}><h3>Trilha da oportunidade</h3>{[["Hoje, 09:42","Checklist atualizado","Indiamara"],["Hoje, 09:18","Consentimento confirmado","Sistema CP"],["Ontem, 17:06","Oportunidade criada","CP Intake"]].map(x=><div className={styles.audit} key={x[0]}><History/><span><b>{x[1]}</b><small>{x[0]} · {x[2]}</small></span></div>)}</div>}
+   {tab==="Auditoria"&&<div className={styles.panel}><h3>Trilha da oportunidade</h3>{[["Hoje, 09:42","Checklist atualizado","Mara Camargo"],["Hoje, 09:18","Consentimento confirmado","Sistema CP"],["Ontem, 17:06","Oportunidade criada","CP Intake"]].map(x=><div className={styles.audit} key={x[0]}><History/><span><b>{x[1]}</b><small>{x[0]} · {x[2]}</small></span></div>)}</div>}
   </article></div></section></main>
 }
