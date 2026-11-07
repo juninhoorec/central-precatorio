@@ -109,49 +109,8 @@ export async function GET(request: Request) {
 
     let queue: any[] = [];
 
-    // Tenta carregar operações da organização autenticada (se houver)
-    try {
-      const tenant = await requireTenantPermission(request.headers, "operation:read");
-      const operations = await listOperations(undefined, tenant.organizationId);
-      if (operations && operations.length > 0) {
-        queue = operations.map((operation) => {
-          const credit = operation.workflow.credit;
-          const client = operation.workflow.client;
-          const depre = credit.depreReference || credit.precatoryNumber || credit.numeroProcessoDEPRE || operation.process;
-          const processoOrigem = credit.originProcessNumber || operation.process;
-          const urls = buildOficioUrls(depre, processoOrigem);
-          return {
-            id: operation.id,
-            depre,
-            titular: client.name,
-            cpfCnpj: client.document || undefined,
-            valor: Number(credit.grossAmount || operation.nominal || 0),
-            municipio: credit.municipality || operation.debtor,
-            devedor: operation.debtor,
-            vara: credit.originCourt || "Vara da Fazenda Pública",
-            processoOrigem,
-            advogadoNome: credit.legalRepName,
-            advogadoOab: credit.legalRepOab,
-            advogadoContato: client.phone || client.email || "",
-            oficio1Url: credit.sourceUrl || urls.oficio1Url,
-            oficio2Url: urls.oficio2Url,
-            cnaUrl: "https://cna.oab.org.br/",
-            statusLocalizacao: "DISPONIVEL",
-            statusCessao: "✓ LIVRE (Sem Cessão Registrada)",
-            statusFila: "Autuado em 2024 · Orçamento 2025 pendente",
-            natureza: credit.nature || "Alimentar",
-            honorarios: "",
-            updatedAt: operation.history.at(-1)?.at,
-          };
-        });
-      }
-    } catch {
-      // Sem sessão, carrega base consolidada
-    }
-
-    if (queue.length === 0) {
-      queue = loadSafraQueue();
-    }
+    // Sempre prioriza a base consolidada safra 26k que possui a fila DEPRE completa
+    queue = loadSafraQueue();
 
     const filtered = queue.filter((item) => {
       if (minValor > 0 && item.valor < minValor) return false;

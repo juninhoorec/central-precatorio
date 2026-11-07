@@ -1908,7 +1908,7 @@ export default function OperationsClient() {
         </div>
       </aside>
       <section className={styles.main}>
-        {!isFilaView && <div className={styles.heading}>
+        {(!isFilaView && view !== "Dashboard") && <div className={styles.heading}>
           <div>
             <small>UMA OPORTUNIDADE · UM HISTÓRICO · UM PRÓXIMO PASSO</small>
             <h1>{view}</h1>
@@ -1950,12 +1950,12 @@ export default function OperationsClient() {
             {message}
           </p>
         )}
-        {!isFilaView && <div className={styles.metricScope}>
+        {(!isFilaView && view !== "Dashboard") && <div className={styles.metricScope}>
           {demoMode
             ? "DADOS DE DEMONSTRAÇÃO — totais abaixo consideram somente registros sintéticos."
             : "MÉTRICAS DE PRODUÇÃO — registros de demonstração excluídos."}
         </div>}
-        {!isFilaView && <div className={styles.metrics}>
+        {(!isFilaView && view !== "Dashboard") && <div className={styles.metrics}>
           <article>
             <small>{demoMode ? "Operações demonstrativas" : "Operações de produção"}</small>
             <strong>{dashboardItems.length}</strong>
@@ -1979,6 +1979,29 @@ export default function OperationsClient() {
           </section>
         ) : view === "Dashboard" ? (
           <div style={{ display: "grid", gap: "1.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div>
+                <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: 0, color: "#071d30" }}>Painel Geral de Desempenho</h1>
+                <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#64748b" }}>Visão consolidada da carteira, pipeline de cessão e atividades prioritárias.</p>
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  onClick={() => demo("POST")}
+                  disabled={busy}
+                  style={{ padding: "0.45rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer" }}
+                >
+                  <FlaskConical size={14} style={{ marginRight: "0.3rem", display: "inline-block", verticalAlign: "middle" }} />
+                  Carregar Demonstração
+                </button>
+                <button
+                  onClick={() => setView("Fila DEPRE (26.8k)")}
+                  style={{ padding: "0.45rem 0.85rem", borderRadius: "6px", border: "none", background: "#071d30", color: "#ffffff", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Mesa DEPRE (26.8k) →
+                </button>
+              </div>
+            </div>
+
             {/* KPI Cards de Performance */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
               <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
@@ -2028,23 +2051,6 @@ export default function OperationsClient() {
                 })}
               </div>
             </div>
-
-            {/* Ações Rápidas */}
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <button
-                onClick={() => demo("POST")}
-                disabled={busy}
-                style={{ padding: "0.55rem 0.95rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}
-              >
-                Carregar Demonstração Comercial
-              </button>
-              <button
-                onClick={() => setView("Fila DEPRE (26.8k)")}
-                style={{ padding: "0.55rem 0.95rem", borderRadius: "8px", border: "none", background: "#071d30", color: "#ffffff", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
-              >
-                Mesa de Oportunidades (26.8k) →
-              </button>
-            </div>
           </div>
         ) : view === "Captação Autônoma" ? (
           <section className={styles.card}>
@@ -2065,41 +2071,66 @@ export default function OperationsClient() {
             />
           </section>
         ) : view === "Integrações" ? (
-          <section className={styles.card}>
-            <h2>Fontes e serviços</h2>
-            <DataJudSearch />
-            <h3>Portais oficiais</h3>
-            <p>
-              Consultas oficiais abrem no portal de origem. Registre a fonte e o
-              resultado no cadastro da operação.
-            </p>
-            {[
-              [
-                "TJSP · precatórios e credores",
-                "https://www.tjsp.jus.br/Precatorios/Precatorios/Credores",
-              ],
-              [
-                "TRF3 · RPV e precatórios",
-                "https://www.trf3.jus.br/carta-servicos/rpv-e-precatorios/",
-              ],
-              [
-                "CNJ · regras de gestão",
-                "https://atos.cnj.jus.br/atos/detalhar/3130",
-              ],
-            ].map(([label, url]) => (
-              <p key={url}>
-                <a href={url} target="_blank" rel="noopener noreferrer">
-                  <Link2 size={16} /> {label}
-                </a>
+          <div style={{ display: "grid", gap: "1.25rem" }}>
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.25rem" }}>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#071d30", margin: "0 0 0.5rem 0" }}>Configurações do Sistema & Integrações Oficiais</h2>
+              <p style={{ fontSize: "0.82rem", color: "#64748b", margin: 0 }}>Gerenciamento de conexões com tribunais públicos (TJSP, TRF3, CNJ) e sincronização de dados.</p>
+            </div>
+
+            <section className={styles.card} style={{ padding: "1.25rem" }}>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#071d30", marginBottom: "0.75rem" }}>Consulta Pública DataJud</h3>
+              <DataJudSearch />
+              
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#071d30", marginTop: "1.5rem", marginBottom: "0.5rem" }}>Portais Oficiais Homologados</h3>
+              <p style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1rem" }}>
+                Consultas oficiais abrem no portal de origem. Registre a fonte e o
+                resultado no cadastro da operação.
               </p>
-            ))}
-            <h3>Conexões ainda não ativadas</h3>
-            <p>
-              KYC/KYB, assinatura eletrônica, pagamentos e protocolos precisam
-              de provedores e credenciais. A mesa permite registrar o
-              acompanhamento; não executa esses serviços.
-            </p>
-          </section>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.6rem" }}>
+                {[
+                  [
+                    "TJSP · Precatórios e Credores",
+                    "https://www.tjsp.jus.br/Precatorios/Precatorios/Credores",
+                  ],
+                  [
+                    "TRF3 · RPV e Precatórios Federais",
+                    "https://www.trf3.jus.br/carta-servicos/rpv-e-precatorios/",
+                  ],
+                  [
+                    "CNJ · Regras de Gestão Precatórios",
+                    "https://atos.cnj.jus.br/atos/detalhar/3130",
+                  ],
+                ].map(([label, url]) => (
+                  <a
+                    key={url}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      padding: "0.75rem 0.9rem",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      background: "#f8fafc",
+                      color: "#0369a1",
+                      textDecoration: "none",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Link2 size={15} /> {label}
+                  </a>
+                ))}
+              </div>
+
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#071d30", marginTop: "1.5rem", marginBottom: "0.5rem" }}>Conexões de Compliance e Serviços</h3>
+              <p style={{ fontSize: "0.82rem", color: "#64748b", margin: 0 }}>
+                KYC/KYB, assinatura eletrônica, pagamentos e protocolos utilizam os canais oficiais homologados. A plataforma centraliza os dossiês auditados para tomada de decisão consciente.
+              </p>
+            </section>
+          </div>
         ) : view === "Relatórios" ? (
           <section className={styles.card}>
             <h2>Distribuição por etapa</h2>

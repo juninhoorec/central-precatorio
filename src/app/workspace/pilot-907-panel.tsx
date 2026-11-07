@@ -80,8 +80,7 @@ function scoreItem(item: PrecatRecord): number {
 
 function cleanTitular(titular: string, natureza?: string): string {
   if (!titular || titular.trim() === "" || titular.startsWith("Credor Titular")) {
-    const isAlimentar = natureza?.toLowerCase().includes("aliment");
-    return isAlimentar ? "Credor Habilitado (Pessoa Física)" : "Credor Habilitado nos Autos";
+    return "—";
   }
   return titular;
 }
@@ -836,11 +835,19 @@ export default function Pilot907Panel() {
 
                     {/* Credor */}
                     <td style={{ padding: "8px 12px" }}>
-                      <div style={{ fontWeight: 700, color: "#071d30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "220px" }}>
+                      <div style={{
+                        fontWeight: displayCredor === "—" ? 400 : 700,
+                        color: displayCredor === "—" ? "#94a3b8" : "#071d30",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "220px",
+                        fontSize: displayCredor === "—" ? "1rem" : "0.82rem"
+                      }}>
                         {displayCredor}
                       </div>
                       <div style={{ fontSize: "0.68rem", color: item.natureza?.toLowerCase().includes("aliment") ? "#15803d" : "#64748b", marginTop: "2px" }}>
-                        {item.natureza || "Alimentar"} · PF
+                        {item.natureza || "Alimentar"}
                       </div>
                     </td>
 
