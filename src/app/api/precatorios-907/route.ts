@@ -17,11 +17,11 @@ function buildOficioUrls(depre: string, processoOrigem: string) {
   return { oficio1Url, oficio2Url };
 }
 
-let cachedQueue: any[] | null = null;
+let cachedQueue: any[] = [];
 let cachedStats: { total: number; totalVolume: number; totalMilhao: number } | null = null;
 
 function loadSafraQueue(): any[] {
-  if (cachedQueue) return cachedQueue;
+  if (cachedQueue.length > 0) return cachedQueue;
   try {
     const safraPath = path.resolve(process.cwd(), "data/queue-safra-26k.json");
     if (fs.existsSync(safraPath)) {
