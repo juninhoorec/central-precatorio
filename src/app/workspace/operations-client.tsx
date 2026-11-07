@@ -18,7 +18,16 @@ import {
   ListFilter,
   Briefcase,
   Settings,
+  BarChart3,
+  HelpCircle,
+  Home,
+  Table,
 } from "lucide-react";
+import PixelDashboard from "./pixel-dashboard";
+import PixelCrm from "./pixel-crm";
+import PixelConfig from "./pixel-config";
+import PixelReports from "./pixel-reports";
+import PixelSupport from "./pixel-support";
 import styles from "./operations.module.css";
 import Documents from "./documents";
 import DataJudSearch from "./datajud-search";
@@ -1813,14 +1822,22 @@ export default function OperationsClient() {
             </div>
           </div>
         </div>
-        <nav style={{ display: "grid", gap: "0.35rem", marginTop: "0.5rem" }}>
+        <nav style={{ display: "grid", gap: "0.4rem", marginTop: "0.75rem" }}>
           {[
-            { id: "Fila DEPRE (26.8k)", label: "Fila DEPRE", badge: "26.8k", icon: ListFilter },
-            { id: "Dashboard", label: "Dashboard / Início", icon: LayoutDashboard },
+            { id: "Dashboard", label: "Início", icon: Home },
+            { id: "Fila DEPRE (26.8k)", label: "Fila DEPRE", badge: "26.8k", icon: Table },
             { id: "Pipeline", label: "Operações & CRM", icon: Briefcase },
             { id: "Integrações", label: "Configurações", icon: Settings },
+            { id: "Relatórios", label: "Relatórios", icon: BarChart3 },
+            { id: "Suporte", label: "Suporte", icon: HelpCircle },
           ].map((item) => {
-            const active = view === item.id || (item.id === "Fila DEPRE (26.8k)" && isFilaView) || (item.id === "Pipeline" && (view === "Pipeline" || view === "Operações" || view === "Agenda"));
+            const active =
+              (item.id === "Dashboard" && view === "Dashboard") ||
+              (item.id === "Fila DEPRE (26.8k)" && (view === "Fila DEPRE (26.8k)" || isFilaView)) ||
+              (item.id === "Pipeline" && (view === "Pipeline" || view === "Operações" || view === "Agenda")) ||
+              (item.id === "Integrações" && view === "Integrações") ||
+              (item.id === "Relatórios" && view === "Relatórios") ||
+              (item.id === "Suporte" && view === "Suporte");
             const Icon = item.icon;
             return (
               <button
@@ -1832,20 +1849,21 @@ export default function OperationsClient() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: "0.6rem",
-                  padding: "0.65rem 0.85rem",
-                  borderRadius: "8px",
-                  border: active ? "1px solid rgba(217, 119, 6, 0.4)" : "1px solid transparent",
-                  background: active ? "rgba(217, 119, 6, 0.12)" : "transparent",
-                  color: active ? "#fbbf24" : "#cbd5e1",
+                  padding: "0.72rem 0.95rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: active ? "#E8AA42" : "transparent",
+                  color: active ? "#081726" : "#94A3B8",
                   fontSize: "0.84rem",
-                  fontWeight: active ? 700 : 500,
+                  fontWeight: active ? 800 : 500,
                   cursor: "pointer",
                   textAlign: "left",
                   transition: "all 0.15s ease",
+                  boxShadow: active ? "0 2px 6px rgba(232, 170, 66, 0.35)" : "none",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                  <Icon size={16} color={active ? "#fbbf24" : "#94a3b8"} />
+                <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+                  <Icon size={17} color={active ? "#081726" : "#64748B"} strokeWidth={active ? 2.5 : 2} />
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
@@ -1854,8 +1872,8 @@ export default function OperationsClient() {
                     fontWeight: 800,
                     padding: "0.1rem 0.45rem",
                     borderRadius: "999px",
-                    background: active ? "#b45309" : "rgba(255,255,255,0.12)",
-                    color: "#ffffff",
+                    background: active ? "#081726" : "rgba(255,255,255,0.12)",
+                    color: active ? "#E8AA42" : "#ffffff",
                   }}>
                     {item.badge}
                   </span>
@@ -1974,193 +1992,33 @@ export default function OperationsClient() {
           </article>
         </div>}
         {isFilaView ? (
-          <section className={styles.card} style={{ padding: "0.85rem 1rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <section style={{ width: "100%" }}>
             <Pilot907Panel />
           </section>
         ) : view === "Dashboard" ? (
-          <div style={{ display: "grid", gap: "1.25rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-              <div>
-                <h1 style={{ fontSize: "1.4rem", fontWeight: 800, margin: 0, color: "#071d30" }}>Painel Geral de Desempenho</h1>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#64748b" }}>Visão consolidada da carteira, pipeline de cessão e atividades prioritárias.</p>
-              </div>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  onClick={() => demo("POST")}
-                  disabled={busy}
-                  style={{ padding: "0.45rem 0.8rem", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer" }}
-                >
-                  <FlaskConical size={14} style={{ marginRight: "0.3rem", display: "inline-block", verticalAlign: "middle" }} />
-                  Carregar Demonstração
-                </button>
-                <button
-                  onClick={() => setView("Fila DEPRE (26.8k)")}
-                  style={{ padding: "0.45rem 0.85rem", borderRadius: "6px", border: "none", background: "#071d30", color: "#ffffff", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
-                >
-                  Mesa DEPRE (26.8k) →
-                </button>
-              </div>
-            </div>
-
-            {/* KPI Cards de Performance */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>Oportunidades em Pipeline</span>
-                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#071d30", marginTop: "0.25rem" }}>{dashboardItems.length}</div>
-                <div style={{ fontSize: "0.75rem", color: "#0369a1", marginTop: "0.2rem" }}>Casos registrados pela equipe</div>
-              </div>
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>Volume em Negociação</span>
-                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#15803d", marginTop: "0.25rem" }}>{money(dashboardItems.reduce((s, o) => s + o.nominal, 0))}</div>
-                <div style={{ fontSize: "0.75rem", color: "#16a34a", marginTop: "0.2rem" }}>Valor nominal declarado</div>
-              </div>
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>Tarefas em Atraso</span>
-                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: overdue.length > 0 ? "#dc2626" : "#071d30", marginTop: "0.25rem" }}>{overdue.length}</div>
-                <div style={{ fontSize: "0.75rem", color: overdue.length > 0 ? "#dc2626" : "#64748b", marginTop: "0.2rem" }}>Pendências com prazo vencido</div>
-              </div>
-              <div style={{ background: "linear-gradient(135deg, #071d30 0%, #173854 100%)", borderRadius: "10px", padding: "1.1rem", color: "#ffffff" }}>
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#cbd5e1" }}>Propostas Formais</span>
-                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fef08a", marginTop: "0.25rem" }}>{dashboardItems.reduce((s, o) => s + o.workflow.negotiations.length, 0)}</div>
-                <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.2rem" }}>Ofertas enviadas aos credores</div>
-              </div>
-            </div>
-
-            {/* Distribuição por Etapas do Funil */}
-            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.25rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#071d30" }}>Funil Operacional de Cessão</h3>
-                <button
-                  onClick={() => setView("Pipeline")}
-                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.78rem", fontWeight: 700, background: "#071d30", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer" }}
-                >
-                  Abrir Pipeline CRM →
-                </button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.6rem" }}>
-                {stages.slice(0, 6).map((st) => {
-                  const count = dashboardItems.filter(o => o.stage === st).length;
-                  const vol = dashboardItems.filter(o => o.stage === st).reduce((s, o) => s + o.nominal, 0);
-                  return (
-                    <div key={st} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "0.75rem" }}>
-                      <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#64748b" }}>{st}</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#071d30", margin: "0.2rem 0" }}>{count}</div>
-                      <div style={{ fontSize: "0.68rem", color: "#94a3b8" }}>{vol > 0 ? money(vol) : "R$ 0"}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ) : view === "Captação Autônoma" ? (
-          <section className={styles.card}>
-            <AutonomousPanel />
-          </section>
-        ) : view === "Captação" ? (
-          <section className={styles.card}>
-            <LeadDashboard
-              items={items}
-              demoMode={demoMode}
-              onDemoModeChange={setDemoMode}
-              onOpen={(item) => {
-                select(item);
-                setView("Operações");
-              }}
-              onCreate={() => void save(true)}
-              onImported={setItems}
-            />
-          </section>
+          <PixelDashboard
+            totalFila={26850}
+            totalVolume={16481898816.95}
+            onNavigate={(navView) => {
+              if (navView === "Fila DEPRE") setView("Fila DEPRE (26.8k)");
+              else if (navView === "Operações & CRM") setView("Pipeline");
+              else if (navView === "Configurações") setView("Integrações");
+              else if (navView === "Relatórios") setView("Relatórios");
+            }}
+          />
+        ) : view === "Pipeline" ? (
+          <PixelCrm
+            operations={dashboardItems}
+            onOpenOperation={(op) => select(op)}
+            onNewLead={() => save(true)}
+          />
         ) : view === "Integrações" ? (
-          <div style={{ display: "grid", gap: "1.25rem" }}>
-            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.25rem" }}>
-              <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#071d30", margin: "0 0 0.5rem 0" }}>Configurações do Sistema & Integrações Oficiais</h2>
-              <p style={{ fontSize: "0.82rem", color: "#64748b", margin: 0 }}>Gerenciamento de conexões com tribunais públicos (TJSP, TRF3, CNJ) e sincronização de dados.</p>
-            </div>
-
-            <section className={styles.card} style={{ padding: "1.25rem" }}>
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#071d30", marginBottom: "0.75rem" }}>Consulta Pública DataJud</h3>
-              <DataJudSearch />
-              
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#071d30", marginTop: "1.5rem", marginBottom: "0.5rem" }}>Portais Oficiais Homologados</h3>
-              <p style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1rem" }}>
-                Consultas oficiais abrem no portal de origem. Registre a fonte e o
-                resultado no cadastro da operação.
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.6rem" }}>
-                {[
-                  [
-                    "TJSP · Precatórios e Credores",
-                    "https://www.tjsp.jus.br/Precatorios/Precatorios/Credores",
-                  ],
-                  [
-                    "TRF3 · RPV e Precatórios Federais",
-                    "https://www.trf3.jus.br/carta-servicos/rpv-e-precatorios/",
-                  ],
-                  [
-                    "CNJ · Regras de Gestão Precatórios",
-                    "https://atos.cnj.jus.br/atos/detalhar/3130",
-                  ],
-                ].map(([label, url]) => (
-                  <a
-                    key={url}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      padding: "0.75rem 0.9rem",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      background: "#f8fafc",
-                      color: "#0369a1",
-                      textDecoration: "none",
-                      fontSize: "0.82rem",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <Link2 size={15} /> {label}
-                  </a>
-                ))}
-              </div>
-
-              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#071d30", marginTop: "1.5rem", marginBottom: "0.5rem" }}>Conexões de Compliance e Serviços</h3>
-              <p style={{ fontSize: "0.82rem", color: "#64748b", margin: 0 }}>
-                KYC/KYB, assinatura eletrônica, pagamentos e protocolos utilizam os canais oficiais homologados. A plataforma centraliza os dossiês auditados para tomada de decisão consciente.
-              </p>
-            </section>
-          </div>
+          <PixelConfig />
         ) : view === "Relatórios" ? (
-          <section className={styles.card}>
-            <h2>Distribuição por etapa</h2>
-            {stages.map((s) => (
-              <p key={s}>
-                {s}: <b>{dashboardItems.filter((o) => o.stage === s).length}</b> ·{" "}
-                {money(
-                  dashboardItems
-                    .filter((o) => o.stage === s)
-                    .reduce((sum, o) => sum + o.nominal, 0),
-                )}
-              </p>
-            ))}
-            <button onClick={exportCsv}>
-              <Download size={16} /> Exportar operações CSV
-            </button>
-            <h3>Origem das oportunidades</h3>
-            {Array.from(
-              new Set(dashboardItems.map((o) => o.source || "Não informada")),
-            ).map((s) => (
-              <p key={s}>
-                {s}:{" "}
-                {
-                  dashboardItems.filter((o) => (o.source || "Não informada") === s)
-                    .length
-                }
-              </p>
-            ))}
-          </section>
-        ) : view === "Controle operacional" ? (
+          <PixelReports />
+        ) : view === "Suporte" ? (
+          <PixelSupport />
+        ) : view === "Captação Autônoma" ? (
           <section className={styles.card}>
             <h2>Painel de produtividade, SLA e qualidade</h2>
             <p>Indicadores calculados sobre os registros da organização ativa, com histórico centralizado.</p>

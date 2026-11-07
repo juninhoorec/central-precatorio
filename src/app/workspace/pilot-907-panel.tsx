@@ -379,7 +379,7 @@ export default function Pilot907Panel() {
   return (
     <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", color: "#0f172a", boxSizing: "border-box" }}>
 
-      {/* ── TOP HEADER: MESA DE OPORTUNIDADES ─────────────────────────── */}
+      {/* ── TOP HEADER: FILA DEPRE ─────────────────────────── */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -387,36 +387,39 @@ export default function Pilot907Panel() {
         flexWrap: "wrap",
         gap: "0.75rem",
         marginBottom: "1rem",
-        paddingBottom: "0.75rem",
-        borderBottom: "1px solid #e2e8f0",
+        padding: "16px 20px",
+        background: "#ffffff",
+        borderRadius: "14px",
+        border: "1px solid #E2E8F0",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
       }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.35rem)", fontWeight: 800, margin: 0, color: "#071d30", letterSpacing: "-0.02em" }}>
-              Mesa de Oportunidades — Fila DEPRE
-            </h1>
-            <span style={{
-              display: "inline-flex",
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "10px",
+              background: "#EFF6FF",
+              color: "#0284C7",
+              display: "flex",
               alignItems: "center",
-              gap: "0.25rem",
-              background: "#fef3c7",
-              color: "#92400e",
-              border: "1px solid #fde68a",
-              padding: "0.15rem 0.5rem",
-              borderRadius: "999px",
-              fontSize: "0.7rem",
-              fontWeight: 700,
-            }}>
-              <Sparkles size={11} color="#b45309" /> Safra 2024/2025
-            </span>
+              justifyContent: "center",
+            }}
+          >
+            <Sparkles size={20} color="#E8AA42" />
           </div>
-          <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "#64748b" }}>
-            <strong>26.850 precatórios auditados</strong> · <strong>100% Livres</strong> · São Paulo, Campinas e Guarulhos.
-          </p>
+          <div>
+            <h1 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0, color: "#081726", letterSpacing: "-0.02em" }}>
+              Fila DEPRE
+            </h1>
+            <p style={{ margin: "2px 0 0", fontSize: "0.8rem", color: "#64748B" }}>
+              Acompanhe e gerencie sua fila de precatórios com dados 100% auditados.
+            </p>
+          </div>
         </div>
 
         {/* Ações globais */}
-        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
           <button
             onClick={() => void fetchData()}
             disabled={loading}
@@ -424,18 +427,18 @@ export default function Pilot907Panel() {
               display: "inline-flex",
               alignItems: "center",
               gap: "0.35rem",
-              padding: "0.45rem 0.75rem",
-              borderRadius: "6px",
-              border: "1px solid #cbd5e1",
+              padding: "0.5rem 0.85rem",
+              borderRadius: "8px",
+              border: "1px solid #CBD5E1",
               background: "#ffffff",
               color: "#334155",
-              fontSize: "0.75rem",
+              fontSize: "0.78rem",
               fontWeight: 600,
               cursor: "pointer",
             }}
           >
-            <RefreshCw size={12} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-            Sincronizar
+            <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
+            Filtros
           </button>
 
           <button
@@ -444,17 +447,18 @@ export default function Pilot907Panel() {
               display: "inline-flex",
               alignItems: "center",
               gap: "0.35rem",
-              padding: "0.45rem 0.85rem",
-              borderRadius: "6px",
-              border: "1px solid #071d30",
-              background: "#071d30",
-              color: "#ffffff",
-              fontSize: "0.75rem",
-              fontWeight: 700,
+              padding: "0.5rem 1rem",
+              borderRadius: "8px",
+              border: "none",
+              background: "#E8AA42",
+              color: "#081726",
+              fontSize: "0.8rem",
+              fontWeight: 800,
               cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(232, 170, 66, 0.35)",
             }}
           >
-            <Download size={12} />
+            <Download size={14} />
             Exportar CSV
           </button>
         </div>
