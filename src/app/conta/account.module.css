@@ -1,81 +1,117 @@
+/* ============================================================
+   CENTRAL PRECATÓRIOS — Tela de Conta / Organizações
+   Identidade: azul-marinho #081726 + dourado #E8AA42
+   ============================================================ */
+
 .page {
   min-height: 100vh;
-  background: #f8fafc;
-  color: #0f172a;
+  background: #071D30;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232,170,66,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(232,170,66,0.05) 0%, transparent 50%);
+  color: #f1f5f9;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: 32px 16px;
   box-sizing: border-box;
+  font-family: var(--font-sans, system-ui, sans-serif);
 }
 
+/* ── LOGO / BRAND ── */
 .brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  font-weight: 900;
+  gap: 12px;
   text-decoration: none;
-  color: #071d30;
-  margin-bottom: 24px;
-  letter-spacing: -0.03em;
+  margin-bottom: 28px;
 }
 
-.brand span {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: #b45309;
+.brandLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1.5px solid rgba(232,170,66,0.5);
+  box-shadow: 0 4px 16px rgba(232,170,66,0.2);
+  flex-shrink: 0;
 }
 
+.brandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brandName {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.brandSub {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #E8AA42;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── HEADING ── */
 .heading {
   text-align: center;
-  max-width: 460px;
+  max-width: 420px;
   margin-bottom: 24px;
 }
 
 .eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: #b45309;
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: #E8AA42;
   font-weight: 800;
   text-transform: uppercase;
+  margin-bottom: 6px;
 }
 
 .heading h1 {
-  font-size: clamp(24px, 4vw, 32px);
+  font-size: clamp(1.4rem, 3.5vw, 1.9rem);
   line-height: 1.2;
-  letter-spacing: -0.03em;
-  margin: 8px 0;
-  color: #071d30;
+  letter-spacing: -0.025em;
+  margin: 0 0 6px;
+  color: #ffffff;
   font-weight: 800;
 }
 
 .heading p {
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.5;
+  color: #94A3B8;
+  font-size: 0.82rem;
+  line-height: 1.6;
   margin: 0;
 }
 
+/* ── CARD CONTAINER ── */
 .card {
   width: 100%;
-  max-width: 440px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  max-width: 420px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
   padding: 28px 24px;
-  box-shadow: 0 4px 20px rgba(7, 29, 48, 0.05);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   box-sizing: border-box;
+  backdrop-filter: blur(8px);
 }
 
 .card h2 {
-  font-size: 19px;
+  font-size: 1rem;
   font-weight: 800;
-  color: #071d30;
-  margin: 0 0 18px;
+  color: #ffffff;
+  margin: 0 0 16px;
   text-align: center;
+  letter-spacing: -0.02em;
 }
 
 .card fieldset {
@@ -83,97 +119,117 @@
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .card label {
   display: grid;
-  gap: 6px;
-  font-size: 13px;
+  gap: 5px;
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #334155;
+  color: #94A3B8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .card input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
-  padding: 11px 13px;
-  background: #f8fafc;
-  color: #0f172a;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.05);
+  color: #ffffff;
   font: inherit;
-  font-size: 14px;
-  transition: border-color 0.15s, background-color 0.15s;
+  font-size: 0.88rem;
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+.card input::placeholder {
+  color: rgba(148,163,184,0.5);
 }
 
 .card input:focus {
   outline: none;
-  border-color: #0369a1;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.12);
+  border-color: rgba(232,170,66,0.6);
+  background: rgba(232,170,66,0.05);
+  box-shadow: 0 0 0 3px rgba(232,170,66,0.12);
 }
 
+/* ── BOTÃO PRINCIPAL ── */
 .card button,
 .open {
   width: 100%;
   box-sizing: border-box;
   border: 0;
-  background: #071d30;
-  color: #ffffff;
+  background: linear-gradient(135deg, #E8AA42 0%, #D97706 100%);
+  color: #081726;
   font: inherit;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 12px 16px;
-  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 13px 16px;
+  border-radius: 9px;
   cursor: pointer;
   text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(232,170,66,0.3);
+  letter-spacing: -0.01em;
 }
 
 .card button:hover,
 .open:hover {
-  background: #0f2b48;
+  background: linear-gradient(135deg, #f0b84e 0%, #e8820a 100%);
+  box-shadow: 0 6px 20px rgba(232,170,66,0.45);
+  transform: translateY(-1px);
 }
 
 .card button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: wait;
+  transform: none;
 }
 
+/* ── BOTÃO SECUNDÁRIO ── */
 .card .secondary {
   background: transparent;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-  font-size: 13px;
+  color: #94A3B8;
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.8rem;
   font-weight: 600;
   padding: 10px 14px;
-  margin-top: 10px;
+  margin-top: 8px;
+  box-shadow: none;
+  letter-spacing: 0;
 }
 
 .card .secondary:hover {
-  background: #f8fafc;
-  color: #071d30;
+  background: rgba(255,255,255,0.05);
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
 }
 
 .card small,
 .note {
-  font-size: 12px;
-  color: #64748b;
+  font-size: 0.72rem;
+  color: #64748B;
   line-height: 1.4;
 }
 
+/* ── GRID DE ORGANIZAÇÕES ── */
 .grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 14px;
   width: 100%;
-  max-width: 580px;
+  max-width: 480px;
 }
 
+/* ── ITEM DE ORGANIZAÇÃO ── */
 .organization {
   display: flex;
   width: 100%;
@@ -181,61 +237,161 @@
   align-items: center;
   gap: 12px;
   text-align: left;
-  margin: 8px 0;
-  background: #f8fafc;
-  color: #071d30;
-  border: 1px solid #e2e8f0;
-  padding: 12px 16px;
-  border-radius: 8px;
+  margin: 5px 0;
+  background: rgba(255,255,255,0.04);
+  color: #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 11px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.organization strong {
+  font-weight: 700;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.organization span {
+  font-size: 0.75rem;
+  color: #64748B;
+  flex-shrink: 0;
+}
+
+.organization:hover {
+  background: rgba(232,170,66,0.08);
+  border-color: rgba(232,170,66,0.3);
+  color: #ffffff;
 }
 
 .organization[aria-pressed="true"] {
-  border-color: #b45309;
-  background: #fef3c7;
-  color: #92400e;
+  border-color: #E8AA42;
+  background: rgba(232,170,66,0.12);
+  color: #ffffff;
 }
 
+.organization[aria-pressed="true"] strong {
+  color: #E8AA42;
+}
+
+.organization[aria-pressed="true"] span {
+  color: #E8AA42;
+  font-weight: 700;
+}
+
+/* ── BOTÃO ABRIR MESA ── */
 .open {
-  margin: 16px 0;
-  background: #16a34a;
+  margin: 12px 0 4px;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(22,163,74,0.3);
 }
 
 .open:hover {
-  background: #15803d;
+  background: linear-gradient(135deg, #1db955 0%, #16a34a 100%);
+  box-shadow: 0 6px 20px rgba(22,163,74,0.45);
 }
 
+/* ── MEMBROS DA EQUIPE ── */
+.members {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.members li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.members li strong {
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.members li span {
+  font-size: 0.72rem;
+  color: #64748B;
+}
+
+.members li small {
+  font-size: 0.65rem;
+  color: #E8AA42;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── ERROS E SUCESSO ── */
 .error,
 .success {
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-radius: 8px;
-  max-width: 440px;
+  max-width: 420px;
   width: 100%;
   box-sizing: border-box;
-  font-size: 13px;
-  margin-top: 14px;
+  font-size: 0.8rem;
+  margin-top: 12px;
   text-align: center;
 }
 
 .error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: rgba(185,28,28,0.15);
+  border: 1px solid rgba(185,28,28,0.3);
+  color: #fca5a5;
 }
 
 .success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
+  background: rgba(22,163,74,0.12);
+  border: 1px solid rgba(22,163,74,0.25);
+  color: #86efac;
 }
 
+/* ── FOOTER ── */
 .footer {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 0.72rem;
+  color: #475569;
   margin-top: 24px;
   text-align: center;
 }
 
 .footer a {
-  color: inherit;
-  text-decoration: underline;
+  color: #64748B;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: #E8AA42;
+}
+
+/* ── DIVISOR ── */
+.card hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  margin: 14px 0;
+}
+
+/* ── CARD H3 ── */
+.card h3 {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #94A3B8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 16px 0 8px;
 }
