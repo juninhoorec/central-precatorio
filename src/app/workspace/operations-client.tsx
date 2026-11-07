@@ -1817,10 +1817,10 @@ export default function OperationsClient() {
           {[
             { id: "Fila DEPRE (26.8k)", label: "Fila DEPRE", badge: "26.8k", icon: ListFilter },
             { id: "Dashboard", label: "Dashboard / Início", icon: LayoutDashboard },
-            { id: "Operações & CRM", label: "Operações & CRM", icon: Briefcase },
-            { id: "Configurações", label: "Configurações", icon: Settings },
+            { id: "Pipeline", label: "Operações & CRM", icon: Briefcase },
+            { id: "Integrações", label: "Configurações", icon: Settings },
           ].map((item) => {
-            const active = view === item.id || (item.id === "Fila DEPRE (26.8k)" && isFilaView);
+            const active = view === item.id || (item.id === "Fila DEPRE (26.8k)" && isFilaView) || (item.id === "Pipeline" && (view === "Pipeline" || view === "Operações" || view === "Agenda"));
             const Icon = item.icon;
             return (
               <button
@@ -1974,9 +1974,78 @@ export default function OperationsClient() {
           </article>
         </div>}
         {isFilaView ? (
-          <section className={styles.card} style={{ padding: "1.25rem 1.5rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <section className={styles.card} style={{ padding: "0.85rem 1rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
             <Pilot907Panel />
           </section>
+        ) : view === "Dashboard" ? (
+          <div style={{ display: "grid", gap: "1.25rem" }}>
+            {/* KPI Cards de Performance */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.85rem" }}>
+              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>Oportunidades em Pipeline</span>
+                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#071d30", marginTop: "0.25rem" }}>{dashboardItems.length}</div>
+                <div style={{ fontSize: "0.75rem", color: "#0369a1", marginTop: "0.2rem" }}>Casos registrados pela equipe</div>
+              </div>
+              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>Volume em Negociação</span>
+                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#15803d", marginTop: "0.25rem" }}>{money(dashboardItems.reduce((s, o) => s + o.nominal, 0))}</div>
+                <div style={{ fontSize: "0.75rem", color: "#16a34a", marginTop: "0.2rem" }}>Valor nominal declarado</div>
+              </div>
+              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.1rem" }}>
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>Tarefas em Atraso</span>
+                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: overdue.length > 0 ? "#dc2626" : "#071d30", marginTop: "0.25rem" }}>{overdue.length}</div>
+                <div style={{ fontSize: "0.75rem", color: overdue.length > 0 ? "#dc2626" : "#64748b", marginTop: "0.2rem" }}>Pendências com prazo vencido</div>
+              </div>
+              <div style={{ background: "linear-gradient(135deg, #071d30 0%, #173854 100%)", borderRadius: "10px", padding: "1.1rem", color: "#ffffff" }}>
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#cbd5e1" }}>Propostas Formais</span>
+                <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fef08a", marginTop: "0.25rem" }}>{dashboardItems.reduce((s, o) => s + o.workflow.negotiations.length, 0)}</div>
+                <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.2rem" }}>Ofertas enviadas aos credores</div>
+              </div>
+            </div>
+
+            {/* Distribuição por Etapas do Funil */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "1.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#071d30" }}>Funil Operacional de Cessão</h3>
+                <button
+                  onClick={() => setView("Pipeline")}
+                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.78rem", fontWeight: 700, background: "#071d30", color: "#ffffff", border: "none", borderRadius: "6px", cursor: "pointer" }}
+                >
+                  Abrir Pipeline CRM →
+                </button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.6rem" }}>
+                {stages.slice(0, 6).map((st) => {
+                  const count = dashboardItems.filter(o => o.stage === st).length;
+                  const vol = dashboardItems.filter(o => o.stage === st).reduce((s, o) => s + o.nominal, 0);
+                  return (
+                    <div key={st} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "0.75rem" }}>
+                      <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#64748b" }}>{st}</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 800, color: "#071d30", margin: "0.2rem 0" }}>{count}</div>
+                      <div style={{ fontSize: "0.68rem", color: "#94a3b8" }}>{vol > 0 ? money(vol) : "R$ 0"}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Ações Rápidas */}
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => demo("POST")}
+                disabled={busy}
+                style={{ padding: "0.55rem 0.95rem", borderRadius: "8px", border: "1px solid #cbd5e1", background: "#ffffff", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}
+              >
+                Carregar Demonstração Comercial
+              </button>
+              <button
+                onClick={() => setView("Fila DEPRE (26.8k)")}
+                style={{ padding: "0.55rem 0.95rem", borderRadius: "8px", border: "none", background: "#071d30", color: "#ffffff", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
+              >
+                Mesa de Oportunidades (26.8k) →
+              </button>
+            </div>
+          </div>
         ) : view === "Captação Autônoma" ? (
           <section className={styles.card}>
             <AutonomousPanel />

@@ -13,21 +13,10 @@ import {
   ChevronRight,
   AlertCircle,
   ExternalLink,
-  FileText,
-  Building2,
-  Scale,
-  DollarSign,
-  TrendingUp,
-  ShieldCheck,
   Sparkles,
   Share2,
-  SlidersHorizontal,
-  ChevronLeft,
-  Calendar,
-  CheckCircle2,
 } from "lucide-react";
 
-// ─── Tipos ─────────────────────────────────────────────────────────────────
 export interface PrecatRecord {
   id: string;
   depre: string;
@@ -67,7 +56,6 @@ const CRM: Record<CrmStatus, { label: string; color: string; bg: string }> = {
   DESCARTADO: { label: "Descartado",       color: "#b91c1c", bg: "#fee2e2" },
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
 const money = (v: number) =>
   v > 0 ? v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "R$ 0,00";
 
@@ -230,14 +218,12 @@ export default function Pilot907Panel() {
     });
   };
 
-  // Copiar apenas número DEPRE
   const copyDepre = (depre: string) => {
     navigator.clipboard.writeText(depre);
     setCopyFeedback(depre);
     setTimeout(() => setCopyFeedback(null), 2000);
   };
 
-  // Exportar CSV
   const exportCsv = () => {
     const header = "ID;DEPRE;Credor;Valor_Face;Municipio;Ente_Devedor;Vara;Processo_Origem;Advogado;OAB;Natureza;Status_Fila;Auditoria_Cessao;Status_CRM;Score_CP;Link_TJSP";
     const rows = items.map(r => [
@@ -267,7 +253,6 @@ export default function Pilot907Panel() {
     a.click();
   };
 
-  // Imprimir Dossiê Executivo
   const printDossier = (item: PrecatRecord) => {
     const displayCredor = cleanTitular(item.titular, item.natureza);
     const score = item._score ?? scoreItem(item);
@@ -382,7 +367,6 @@ export default function Pilot907Panel() {
     }
   };
 
-  // Cálculos simulador
   const simulador = useMemo(() => {
     if (!dossier) return null;
     const v = dossier.valor || 0;
@@ -394,65 +378,65 @@ export default function Pilot907Panel() {
   }, [dossier, desconto, meses]);
 
   return (
-    <div style={{ fontFamily: "inherit", maxWidth: "100%", margin: "0 auto", color: "#0f172a" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", color: "#0f172a", boxSizing: "border-box" }}>
 
       {/* ── TOP HEADER: MESA DE OPORTUNIDADES ─────────────────────────── */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start",
+        alignItems: "center",
         flexWrap: "wrap",
-        gap: "1rem",
-        marginBottom: "1.25rem",
-        paddingBottom: "1rem",
+        gap: "0.75rem",
+        marginBottom: "1rem",
+        paddingBottom: "0.75rem",
         borderBottom: "1px solid #e2e8f0",
       }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.25rem" }}>
-            <h1 style={{ fontSize: "1.45rem", fontWeight: 800, margin: 0, color: "#071d30", letterSpacing: "-0.02em" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "clamp(1.1rem, 2.5vw, 1.35rem)", fontWeight: 800, margin: 0, color: "#071d30", letterSpacing: "-0.02em" }}>
               Mesa de Oportunidades — Fila DEPRE
             </h1>
             <span style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.35rem",
+              gap: "0.25rem",
               background: "#fef3c7",
               color: "#92400e",
               border: "1px solid #fde68a",
-              padding: "0.2rem 0.65rem",
+              padding: "0.15rem 0.5rem",
               borderRadius: "999px",
-              fontSize: "0.72rem",
+              fontSize: "0.7rem",
               fontWeight: 700,
             }}>
-              <Sparkles size={12} color="#b45309" /> Safra Quente 2024/2025 · Orçamento Ativo
+              <Sparkles size={11} color="#b45309" /> Safra 2024/2025
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: "0.82rem", color: "#64748b" }}>
-            Carteira consolidada com <strong>26.850 precatórios auditados</strong> · <strong>100% Livres de Cessão</strong> · TJSP São Paulo, Campinas e Guarulhos.
+          <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "#64748b" }}>
+            <strong>26.850 precatórios auditados</strong> · <strong>100% Livres</strong> · São Paulo, Campinas e Guarulhos.
           </p>
         </div>
 
         {/* Ações globais */}
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
           <button
             onClick={() => void fetchData()}
             disabled={loading}
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.5rem 0.85rem",
-              borderRadius: "8px",
+              gap: "0.35rem",
+              padding: "0.45rem 0.75rem",
+              borderRadius: "6px",
               border: "1px solid #cbd5e1",
               background: "#ffffff",
               color: "#334155",
-              fontSize: "0.8rem",
+              fontSize: "0.75rem",
               fontWeight: 600,
               cursor: "pointer",
             }}
           >
-            <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-            Sincronizar Fila
+            <RefreshCw size={12} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
+            Sincronizar
           </button>
 
           <button
@@ -460,51 +444,45 @@ export default function Pilot907Panel() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.5rem 0.95rem",
-              borderRadius: "8px",
+              gap: "0.35rem",
+              padding: "0.45rem 0.85rem",
+              borderRadius: "6px",
               border: "1px solid #071d30",
               background: "#071d30",
               color: "#ffffff",
-              fontSize: "0.8rem",
+              fontSize: "0.75rem",
               fontWeight: 700,
               cursor: "pointer",
             }}
           >
-            <Download size={13} />
-            Exportar Carteira (.CSV)
+            <Download size={12} />
+            Exportar CSV
           </button>
         </div>
       </div>
 
-      {/* ── 4 KPI CARDS (LIGHT EXECUTIVE LUXURY STYLE) ──────────────────── */}
+      {/* ── 4 KPI CARDS (RESPONSIVOS: GRID COM AUTO-FIT) ────────────────── */}
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "0.85rem",
-        marginBottom: "1.25rem",
+        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+        gap: "0.6rem",
+        marginBottom: "1rem",
       }}>
         {/* Card 1: Processos na Fila */}
         <div style={{
           background: "#ffffff",
           border: "1px solid #e2e8f0",
-          borderRadius: "10px",
-          padding: "1rem 1.15rem",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+          borderRadius: "8px",
+          padding: "0.75rem 0.9rem",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b" }}>
-              Processos na Fila
-            </span>
-            <span style={{ color: "#0369a1", background: "#e0f2fe", padding: "0.2rem 0.45rem", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>
-              Safra 24/25
-            </span>
-          </div>
-          <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#071d30", marginTop: "0.35rem", letterSpacing: "-0.02em" }}>
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>
+            Fila DEPRE
+          </span>
+          <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#071d30", marginTop: "0.2rem" }}>
             {totalCount.toLocaleString("pt-BR")}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#16a34a", marginTop: "0.2rem", fontWeight: 600 }}>
-            ↗ 100% Autuados 2024/2025
+          <div style={{ fontSize: "0.7rem", color: "#16a34a", fontWeight: 600 }}>
+            ↗ Safra 2024/2025
           </div>
         </div>
 
@@ -512,23 +490,17 @@ export default function Pilot907Panel() {
         <div style={{
           background: "#ffffff",
           border: "1px solid #e2e8f0",
-          borderRadius: "10px",
-          padding: "1rem 1.15rem",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+          borderRadius: "8px",
+          padding: "0.75rem 0.9rem",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#64748b" }}>
-              Taxa de Disponível
-            </span>
-            <span style={{ color: "#16a34a", background: "#dcfce7", padding: "0.2rem 0.45rem", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>
-              Auditado
-            </span>
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>
+            Livres de Cessão
+          </span>
+          <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#15803d", marginTop: "0.2rem" }}>
+            100%
           </div>
-          <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#15803d", marginTop: "0.35rem", letterSpacing: "-0.02em" }}>
-            {totalCount.toLocaleString("pt-BR")} (100%)
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.2rem" }}>
-            ✓ Livres de cessão registrada
+          <div style={{ fontSize: "0.7rem", color: "#64748b" }}>
+            26.850 disponíveis
           </div>
         </div>
 
@@ -536,77 +508,64 @@ export default function Pilot907Panel() {
         <div style={{
           background: "#ffffff",
           border: "1px solid #fde68a",
-          borderRadius: "10px",
-          padding: "1rem 1.15rem",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+          borderRadius: "8px",
+          padding: "0.75rem 0.9rem",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#92400e" }}>
-              Faixa do Milhão (≥ R$ 1M)
-            </span>
-            <span style={{ color: "#b45309", background: "#fef3c7", padding: "0.2rem 0.45rem", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>
-              Top Priority
-            </span>
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "#92400e" }}>
+            Faixa do Milhão
+          </span>
+          <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#b45309", marginTop: "0.2rem" }}>
+            {totalMilhao.toLocaleString("pt-BR")}
           </div>
-          <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#b45309", marginTop: "0.35rem", letterSpacing: "-0.02em" }}>
-            {totalMilhao.toLocaleString("pt-BR")} Casos
-          </div>
-          <div style={{ fontSize: "0.75rem", color: "#b45309", marginTop: "0.2rem", fontWeight: 600 }}>
-            🎯 Alta rentabilidade comercial
+          <div style={{ fontSize: "0.7rem", color: "#b45309", fontWeight: 600 }}>
+            🎯 ≥ R$ 1 Milhão
           </div>
         </div>
 
-        {/* Card 4: Volume Total em Carteira */}
+        {/* Card 4: Volume Total */}
         <div style={{
           background: "linear-gradient(135deg, #071d30 0%, #0f2b48 100%)",
-          borderRadius: "10px",
-          padding: "1rem 1.15rem",
+          borderRadius: "8px",
+          padding: "0.75rem 0.9rem",
           color: "#ffffff",
-          boxShadow: "0 4px 12px rgba(7,29,48,0.15)",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#cbd5e1" }}>
-              Volume Total em Fila
-            </span>
-            <span style={{ color: "#fef08a", background: "rgba(254,240,138,0.15)", padding: "0.2rem 0.45rem", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>
-              Orç. Ativo
-            </span>
-          </div>
-          <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#fef08a", marginTop: "0.35rem", letterSpacing: "-0.02em" }}>
+          <span style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "#cbd5e1" }}>
+            Volume Total
+          </span>
+          <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#fef08a", marginTop: "0.2rem" }}>
             {shortMoney(totalVolume)}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.2rem" }}>
-            Filtrado: {shortMoney(filteredVol)} ({filteredCount.toLocaleString("pt-BR")})
+          <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
+            {filteredCount.toLocaleString("pt-BR")} filtrados
           </div>
         </div>
       </div>
 
-      {/* ── BARRA DE FILTROS & BUSCA INTEGRADA ─────────────────────────── */}
+      {/* ── BARRA DE FILTROS COMPACTA E RESPONSIVA ────────────────────── */}
       <div style={{
         background: "#ffffff",
         border: "1px solid #e2e8f0",
-        borderRadius: "10px",
-        padding: "0.75rem 1rem",
-        marginBottom: "1rem",
+        borderRadius: "8px",
+        padding: "0.65rem 0.85rem",
+        marginBottom: "0.85rem",
         display: "flex",
         flexDirection: "column",
-        gap: "0.65rem",
+        gap: "0.5rem",
       }}>
-        {/* Linha 1: Input de busca com filtros dropdown */}
-        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "center" }}>
-          {/* Campo Busca */}
-          <div style={{ position: "relative", flex: "1 1 280px" }}>
-            <Search size={15} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+        {/* Linha de busca e selects */}
+        <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ position: "relative", flex: "1 1 200px" }}>
+            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
             <input
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Buscar por Credor, DEPRE, Processo Origem, Advogado, OAB..."
+              placeholder="Buscar Credor, DEPRE, Processo, Advogado..."
               style={{
                 width: "100%",
-                padding: "0.55rem 0.75rem 0.55rem 2.1rem",
+                padding: "0.45rem 0.65rem 0.45rem 1.9rem",
                 border: "1px solid #cbd5e1",
-                borderRadius: "8px",
-                fontSize: "0.84rem",
+                borderRadius: "6px",
+                fontSize: "0.8rem",
                 outline: "none",
                 background: "#f8fafc",
                 boxSizing: "border-box",
@@ -614,121 +573,90 @@ export default function Pilot907Panel() {
             />
           </div>
 
-          {/* Filtro Município */}
           <select
             value={municipio}
             onChange={e => { setMunicipio(e.target.value); setPage(1); }}
             style={{
-              padding: "0.55rem 0.75rem",
+              padding: "0.45rem 0.6rem",
               border: "1px solid #cbd5e1",
-              borderRadius: "8px",
-              fontSize: "0.82rem",
+              borderRadius: "6px",
+              fontSize: "0.78rem",
               background: "#ffffff",
               color: "#334155",
-              cursor: "pointer",
             }}
           >
-            <option value="">Todos os Municípios</option>
+            <option value="">Municípios</option>
             <option value="são paulo">São Paulo</option>
             <option value="campinas">Campinas</option>
             <option value="guarulhos">Guarulhos</option>
           </select>
 
-          {/* Filtro Faixa de Valor */}
           <select
             value={minValor}
             onChange={e => { setMinValor(Number(e.target.value)); setPage(1); }}
             style={{
-              padding: "0.55rem 0.75rem",
+              padding: "0.45rem 0.6rem",
               border: "1px solid #cbd5e1",
-              borderRadius: "8px",
-              fontSize: "0.82rem",
+              borderRadius: "6px",
+              fontSize: "0.78rem",
               background: minValor >= 1_000_000 ? "#fef3c7" : "#ffffff",
               color: minValor >= 1_000_000 ? "#92400e" : "#334155",
               fontWeight: minValor >= 1_000_000 ? 700 : 500,
-              cursor: "pointer",
             }}
           >
-            <option value={0}>Todos os Valores</option>
+            <option value={0}>Valores</option>
             <option value={100_000}>≥ R$ 100k</option>
             <option value={500_000}>≥ R$ 500k</option>
-            <option value={1_000_000}>🎯 Faixa do Milhão (≥ R$ 1M)</option>
-            <option value={3_000_000}>💎 Super Precatórios (≥ R$ 3M)</option>
+            <option value={1_000_000}>🎯 Faixa do Milhão (≥ 1M)</option>
+            <option value={3_000_000}>💎 Super Precatórios (≥ 3M)</option>
           </select>
 
-          {/* Filtro Status CRM */}
-          <select
-            value={crmFilter}
-            onChange={e => { setCrmFilter(e.target.value as CrmStatus | ""); setPage(1); }}
-            style={{
-              padding: "0.55rem 0.75rem",
-              border: "1px solid #cbd5e1",
-              borderRadius: "8px",
-              fontSize: "0.82rem",
-              background: "#ffffff",
-              color: "#334155",
-              cursor: "pointer",
-            }}
-          >
-            <option value="">Status CRM (Todos)</option>
-            {(Object.keys(CRM) as CrmStatus[]).map(s => (
-              <option key={s} value={s}>{CRM[s].label}</option>
-            ))}
-          </select>
-
-          {/* Ordenação */}
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value as any)}
             style={{
-              padding: "0.55rem 0.75rem",
+              padding: "0.45rem 0.6rem",
               border: "1px solid #cbd5e1",
-              borderRadius: "8px",
-              fontSize: "0.82rem",
+              borderRadius: "6px",
+              fontSize: "0.78rem",
               background: "#ffffff",
               color: "#334155",
-              cursor: "pointer",
             }}
           >
-            <option value="valor">Maior Valor Face</option>
-            <option value="score">Prioridade / Score CP</option>
+            <option value="valor">Maior Valor</option>
+            <option value="score">Score CP</option>
             <option value="municipio">Município</option>
-            <option value="depre">Ordem Cronológica DEPRE</option>
           </select>
 
-          {/* Botão Favoritos */}
           <button
             onClick={() => { setStarFilter(v => !v); setPage(1); }}
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "0.35rem",
-              padding: "0.55rem 0.85rem",
-              borderRadius: "8px",
+              gap: "0.25rem",
+              padding: "0.45rem 0.65rem",
+              borderRadius: "6px",
               border: starFilter ? "1.5px solid #d97706" : "1px solid #cbd5e1",
               background: starFilter ? "#fffbeb" : "#ffffff",
               color: starFilter ? "#d97706" : "#475569",
-              fontSize: "0.82rem",
+              fontSize: "0.78rem",
               fontWeight: 600,
               cursor: "pointer",
             }}
           >
-            <Star size={14} fill={starFilter ? "#d97706" : "none"} />
+            <Star size={13} fill={starFilter ? "#d97706" : "none"} />
             Favoritos ({starred.size})
           </button>
         </div>
 
-        {/* Linha 2: Quick-filter tags instantâneas */}
-        <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-            Acesso Rápido:
-          </span>
+        {/* Atalhos de filtro em pills compactas */}
+        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", alignItems: "center" }}>
           <button
             onClick={() => { setMinValor(1_000_000); setMunicipio(""); setSearch(""); setPage(1); }}
             style={{
-              padding: "0.25rem 0.65rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "16px",
+              fontSize: "0.72rem",
               fontWeight: 600,
               border: minValor === 1_000_000 ? "1px solid #b45309" : "1px solid #e2e8f0",
               background: minValor === 1_000_000 ? "#fef3c7" : "#f8fafc",
@@ -741,9 +669,9 @@ export default function Pilot907Panel() {
           <button
             onClick={() => { setMunicipio("são paulo"); setPage(1); }}
             style={{
-              padding: "0.25rem 0.65rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "16px",
+              fontSize: "0.72rem",
               fontWeight: 600,
               border: municipio === "são paulo" ? "1px solid #0369a1" : "1px solid #e2e8f0",
               background: municipio === "são paulo" ? "#e0f2fe" : "#f8fafc",
@@ -751,14 +679,14 @@ export default function Pilot907Panel() {
               cursor: "pointer",
             }}
           >
-            🏛️ São Paulo
+            São Paulo
           </button>
           <button
             onClick={() => { setMunicipio("campinas"); setPage(1); }}
             style={{
-              padding: "0.25rem 0.65rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "16px",
+              fontSize: "0.72rem",
               fontWeight: 600,
               border: municipio === "campinas" ? "1px solid #0369a1" : "1px solid #e2e8f0",
               background: municipio === "campinas" ? "#e0f2fe" : "#f8fafc",
@@ -766,14 +694,14 @@ export default function Pilot907Panel() {
               cursor: "pointer",
             }}
           >
-            🌳 Campinas
+            Campinas
           </button>
           <button
             onClick={() => { setMunicipio("guarulhos"); setPage(1); }}
             style={{
-              padding: "0.25rem 0.65rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "16px",
+              fontSize: "0.72rem",
               fontWeight: 600,
               border: municipio === "guarulhos" ? "1px solid #0369a1" : "1px solid #e2e8f0",
               background: municipio === "guarulhos" ? "#e0f2fe" : "#f8fafc",
@@ -781,14 +709,14 @@ export default function Pilot907Panel() {
               cursor: "pointer",
             }}
           >
-            ✈️ Guarulhos
+            Guarulhos
           </button>
           <button
             onClick={() => { setNatureza("alimentar"); setPage(1); }}
             style={{
-              padding: "0.25rem 0.65rem",
-              borderRadius: "20px",
-              fontSize: "0.75rem",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "16px",
+              fontSize: "0.72rem",
               fontWeight: 600,
               border: naturezaFilter === "alimentar" ? "1px solid #16a34a" : "1px solid #e2e8f0",
               background: naturezaFilter === "alimentar" ? "#dcfce7" : "#f8fafc",
@@ -796,7 +724,7 @@ export default function Pilot907Panel() {
               cursor: "pointer",
             }}
           >
-            ⚖️ 100% Alimentares
+            Alimentares
           </button>
           {(municipio || minValor > 0 || search || crmFilter || starFilter || naturezaFilter) && (
             <button
@@ -810,9 +738,9 @@ export default function Pilot907Panel() {
                 setPage(1);
               }}
               style={{
-                padding: "0.25rem 0.65rem",
-                borderRadius: "20px",
-                fontSize: "0.75rem",
+                padding: "0.2rem 0.5rem",
+                borderRadius: "16px",
+                fontSize: "0.72rem",
                 fontWeight: 600,
                 border: "1px solid #fecaca",
                 background: "#fef2f2",
@@ -820,28 +748,24 @@ export default function Pilot907Panel() {
                 cursor: "pointer",
               }}
             >
-              ✕ Limpar Filtros
+              ✕ Limpar
             </button>
           )}
         </div>
       </div>
 
-      {/* ── TABELA DE OPORTUNIDADES (HIGH DENSITY EXECUTIVE TABLE) ──────── */}
+      {/* ── TABELA COM ROLAGEM HORIZONTAL E COLUNAS SEPARADAS ─────────── */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "3.5rem 1rem", background: "#ffffff", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-          <RefreshCw size={24} style={{ animation: "spin 1s linear infinite", display: "block", margin: "0 auto 0.75rem", color: "#b45309" }} />
-          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#071d30" }}>Carregando Safra Quente (26.850 Precatórios)...</div>
-          <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.25rem" }}>Auditando processos DEPRE e ofícios oficiais no TJSP</div>
+        <div style={{ textAlign: "center", padding: "2.5rem 1rem", background: "#ffffff", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+          <RefreshCw size={20} style={{ animation: "spin 1s linear infinite", display: "block", margin: "0 auto 0.5rem", color: "#b45309" }} />
+          <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#071d30" }}>Carregando 26.850 Precatórios...</div>
         </div>
       )}
 
       {error && (
-        <div style={{ padding: "1.25rem", borderRadius: "8px", background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", marginBottom: "1rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
-          <AlertCircle size={20} />
-          <div>
-            <div style={{ fontWeight: 700 }}>Não foi possível carregar a base de precatórios</div>
-            <div style={{ fontSize: "0.82rem" }}>{error}</div>
-          </div>
+        <div style={{ padding: "1rem", borderRadius: "8px", background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", marginBottom: "1rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <AlertCircle size={18} />
+          <div style={{ fontSize: "0.82rem" }}>{error}</div>
         </div>
       )}
 
@@ -849,309 +773,246 @@ export default function Pilot907Panel() {
         <div style={{
           background: "#ffffff",
           border: "1px solid #e2e8f0",
-          borderRadius: "10px",
-          overflow: "hidden",
+          borderRadius: "8px",
+          width: "100%",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
           boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
         }}>
-          {/* Header da Tabela */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(240px, 1.3fr) minmax(200px, 1.2fr) 130px 140px minmax(170px, 1fr) 100px 140px",
-            padding: "0.65rem 1rem",
-            background: "#f8fafc",
-            borderBottom: "1px solid #e2e8f0",
-            fontSize: "0.72rem",
-            fontWeight: 700,
-            color: "#64748b",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            alignItems: "center",
-          }}>
-            <span>Credor Titular / Tipo</span>
-            <span>DEPRE & Processo Origem</span>
-            <span>Município</span>
-            <span style={{ textAlign: "right" }}>Valor de Face</span>
-            <span>Advogado / OAB</span>
-            <span style={{ textAlign: "center" }}>Auditoria</span>
-            <span style={{ textAlign: "center" }}>Ações Rápidas</span>
-          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "960px", fontSize: "0.82rem", textAlign: "left" }}>
+            <thead>
+              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <th style={{ padding: "8px 12px", width: "30px" }}></th>
+                <th style={{ padding: "8px 12px", minWidth: "180px" }}>Credor Titular</th>
+                <th style={{ padding: "8px 12px", minWidth: "170px" }}>Processo DEPRE</th>
+                <th style={{ padding: "8px 12px", minWidth: "110px" }}>Município</th>
+                <th style={{ padding: "8px 12px", minWidth: "130px", textAlign: "right" }}>Valor de Face</th>
+                <th style={{ padding: "8px 12px", minWidth: "160px" }}>Advogado / OAB</th>
+                <th style={{ padding: "8px 12px", minWidth: "90px", textAlign: "center" }}>Auditoria</th>
+                <th style={{ padding: "8px 12px", minWidth: "130px", textAlign: "center" }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+                    Nenhum precatório localizado com os filtros selecionados.
+                  </td>
+                </tr>
+              )}
+              {items.map((item, idx) => {
+                const displayCredor = cleanTitular(item.titular, item.natureza);
+                const isMilhao = item.valor >= 1_000_000;
+                const isStarred = starred.has(item.id);
 
-          {/* Itens vazios */}
-          {items.length === 0 && (
-            <div style={{ padding: "3rem 1rem", textAlign: "center", color: "#64748b" }}>
-              <div style={{ fontSize: "1rem", fontWeight: 700, color: "#071d30" }}>Nenhum precatório localizado com os filtros selecionados.</div>
-              <div style={{ fontSize: "0.82rem", marginTop: "0.35rem" }}>Tente ajustar a busca ou o valor mínimo de corte.</div>
-            </div>
-          )}
-
-          {/* Linhas */}
-          {items.map((item, idx) => {
-            const displayCredor = cleanTitular(item.titular, item.natureza);
-            const isMilhao = item.valor >= 1_000_000;
-            const isFechado = (crmStatus[item.id] ?? "NOVO") === "FECHADO";
-            const isStarred = starred.has(item.id);
-            const status = crmStatus[item.id] ?? "NOVO";
-
-            return (
-              <div
-                key={item.id}
-                onClick={() => { setDossier(item); setDrawerTab("resumo"); }}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(240px, 1.3fr) minmax(200px, 1.2fr) 130px 140px minmax(170px, 1fr) 100px 140px",
-                  padding: "0.75rem 1rem",
-                  borderBottom: idx < items.length - 1 ? "1px solid #f1f5f9" : "none",
-                  background: isFechado ? "#f0fdf4" : idx % 2 === 0 ? "#ffffff" : "#fbfcfe",
-                  cursor: "pointer",
-                  alignItems: "center",
-                  transition: "background 0.15s ease",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "#f4f8fb"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isFechado ? "#f0fdf4" : idx % 2 === 0 ? "#ffffff" : "#fbfcfe"; }}
-              >
-                {/* Coluna 1: Credor Titular */}
-                <div style={{ minWidth: 0, paddingRight: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation();
-                        setStarred(s => {
-                          const n = new Set(s);
-                          n.has(item.id) ? n.delete(item.id) : n.add(item.id);
-                          return n;
-                        });
-                      }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: isStarred ? "#f59e0b" : "#cbd5e1" }}
-                      title={isStarred ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                    >
-                      <Star size={13} fill={isStarred ? "#f59e0b" : "none"} />
-                    </button>
-                    <span style={{
-                      fontWeight: 700,
-                      fontSize: "0.85rem",
-                      color: "#071d30",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {displayCredor}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: "0.35rem", alignItems: "center", marginTop: "0.2rem" }}>
-                    <span style={{
-                      fontSize: "0.68rem",
-                      fontWeight: 700,
-                      padding: "0.1rem 0.4rem",
-                      borderRadius: "4px",
-                      background: item.natureza?.toLowerCase().includes("aliment") ? "#dcfce7" : "#e2e8f0",
-                      color: item.natureza?.toLowerCase().includes("aliment") ? "#15803d" : "#475569",
-                    }}>
-                      {item.natureza || "Alimentar"}
-                    </span>
-                    <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                      PF
-                    </span>
-                  </div>
-                </div>
-
-                {/* Coluna 2: DEPRE & Processo Origem */}
-                <div style={{ minWidth: 0, paddingRight: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                    <span style={{ fontFamily: "monospace", fontSize: "0.78rem", fontWeight: 700, color: "#0369a1" }}>
-                      {item.depre}
-                    </span>
-                    <button
-                      onClick={e => { e.stopPropagation(); copyDepre(item.depre); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: copyFeedback === item.depre ? "#16a34a" : "#94a3b8" }}
-                      title="Copiar DEPRE"
-                    >
-                      {copyFeedback === item.depre ? <Check size={12} /> : <Copy size={12} />}
-                    </button>
-                  </div>
-                  <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "0.15rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {item.processoOrigem || "TJSP"} · {item.vara || "Vara Fazenda"}
-                  </div>
-                </div>
-
-                {/* Coluna 3: Município & Devedor */}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "#334155" }}>
-                    {item.municipio}
-                  </div>
-                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.1rem" }}>
-                    Orçamento {item.budgetYear || 2025}
-                  </div>
-                </div>
-
-                {/* Coluna 4: Valor de Face */}
-                <div style={{ textAlign: "right", paddingRight: "0.5rem" }}>
-                  <div style={{
-                    fontWeight: 800,
-                    fontSize: isMilhao ? "0.92rem" : "0.85rem",
-                    color: isMilhao ? "#b45309" : "#071d30",
-                    fontVariantNumeric: "tabular-nums",
-                  }}>
-                    {money(item.valor)}
-                  </div>
-                  {isMilhao && (
-                    <span style={{
-                      display: "inline-block",
-                      fontSize: "0.65rem",
-                      fontWeight: 800,
-                      color: "#92400e",
-                      background: "#fef3c7",
-                      padding: "0.08rem 0.35rem",
-                      borderRadius: "4px",
-                      marginTop: "0.15rem",
-                    }}>
-                      🎯 Faixa do Milhão
-                    </span>
-                  )}
-                </div>
-
-                {/* Coluna 5: Advogado & OAB */}
-                <div style={{ minWidth: 0, paddingRight: "0.5rem" }}>
-                  <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {item.advogadoNome || "Consta nos autos"}
-                  </div>
-                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.1rem" }}>
-                    {item.advogadoOab ? `OAB ${item.advogadoOab}` : "TJSP e-SAJ"}
-                  </div>
-                </div>
-
-                {/* Coluna 6: Auditoria & Cessão */}
-                <div style={{ textAlign: "center" }}>
-                  <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.25rem",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    color: "#15803d",
-                    background: "#dcfce7",
-                    padding: "0.18rem 0.5rem",
-                    borderRadius: "999px",
-                  }}>
-                    ✓ LIVRE
-                  </span>
-                </div>
-
-                {/* Coluna 7: Ações Rápidas */}
-                <div style={{ display: "flex", gap: "0.35rem", justifyContent: "center", alignItems: "center" }} onClick={e => e.stopPropagation()}>
-                  {/* Copiar WhatsApp */}
-                  <button
-                    onClick={() => copyCanonicalWhatsApp(item)}
+                return (
+                  <tr
+                    key={item.id}
+                    onClick={() => { setDossier(item); setDrawerTab("resumo"); }}
                     style={{
-                      padding: "0.35rem 0.55rem",
-                      borderRadius: "6px",
-                      border: "1px solid #bbf7d0",
-                      background: copyFeedback === item.id ? "#15803d" : "#f0fdf4",
-                      color: copyFeedback === item.id ? "#ffffff" : "#166534",
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
+                      borderBottom: idx < items.length - 1 ? "1px solid #f1f5f9" : "none",
+                      background: idx % 2 === 0 ? "#ffffff" : "#fbfcfe",
                       cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
+                      transition: "background 0.12s ease",
                     }}
-                    title="Copiar Resumo WhatsApp (Formato Oficial)"
+                    onMouseEnter={e => { (e.currentTarget as HTMLTableRowElement).style.background = "#f1f5f9"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.background = idx % 2 === 0 ? "#ffffff" : "#fbfcfe"; }}
                   >
-                    {copyFeedback === item.id ? <Check size={13} /> : <Copy size={13} />}
-                    <span>Whats</span>
-                  </button>
+                    {/* Estrela */}
+                    <td style={{ padding: "8px 6px 8px 12px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => {
+                          setStarred(s => {
+                            const n = new Set(s);
+                            n.has(item.id) ? n.delete(item.id) : n.add(item.id);
+                            return n;
+                          });
+                        }}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: isStarred ? "#f59e0b" : "#cbd5e1" }}
+                      >
+                        <Star size={13} fill={isStarred ? "#f59e0b" : "none"} />
+                      </button>
+                    </td>
 
-                  {/* Gerar PDF */}
-                  <button
-                    onClick={() => printDossier(item)}
-                    style={{
-                      padding: "0.35rem 0.5rem",
-                      borderRadius: "6px",
-                      border: "1px solid #cbd5e1",
-                      background: "#ffffff",
-                      color: "#334155",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                    }}
-                    title="Imprimir / Gerar PDF Executivo"
-                  >
-                    <Printer size={13} />
-                  </button>
+                    {/* Credor */}
+                    <td style={{ padding: "8px 12px" }}>
+                      <div style={{ fontWeight: 700, color: "#071d30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "220px" }}>
+                        {displayCredor}
+                      </div>
+                      <div style={{ fontSize: "0.68rem", color: item.natureza?.toLowerCase().includes("aliment") ? "#15803d" : "#64748b", marginTop: "2px" }}>
+                        {item.natureza || "Alimentar"} · PF
+                      </div>
+                    </td>
 
-                  {/* Abrir TJSP */}
-                  <a
-                    href={item.oficio1Url || item.oficio2Url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: "0.35rem 0.5rem",
-                      borderRadius: "6px",
-                      border: "1px solid #cbd5e1",
-                      background: "#ffffff",
-                      color: "#0369a1",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      textDecoration: "none",
-                    }}
-                    title="Abrir Autos no TJSP (e-SAJ)"
-                  >
-                    <ExternalLink size={13} />
-                  </a>
-                </div>
-              </div>
-            );
-          })}
+                    {/* DEPRE */}
+                    <td style={{ padding: "8px 12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span style={{ fontFamily: "monospace", fontSize: "0.78rem", fontWeight: 700, color: "#0369a1" }}>
+                          {item.depre}
+                        </span>
+                        <button
+                          onClick={e => { e.stopPropagation(); copyDepre(item.depre); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: copyFeedback === item.depre ? "#16a34a" : "#94a3b8" }}
+                          title="Copiar DEPRE"
+                        >
+                          {copyFeedback === item.depre ? <Check size={11} /> : <Copy size={11} />}
+                        </button>
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "200px" }}>
+                        {item.processoOrigem || "TJSP"} · {item.vara || "Vara Fazenda"}
+                      </div>
+                    </td>
+
+                    {/* Município */}
+                    <td style={{ padding: "8px 12px" }}>
+                      <div style={{ fontWeight: 600, color: "#334155" }}>{item.municipio}</div>
+                      <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "2px" }}>Orçamento {item.budgetYear || 2025}</div>
+                    </td>
+
+                    {/* Valor de Face */}
+                    <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                      <div style={{ fontWeight: 800, color: isMilhao ? "#b45309" : "#071d30", fontSize: isMilhao ? "0.9rem" : "0.84rem" }}>
+                        {money(item.valor)}
+                      </div>
+                      {isMilhao && (
+                        <span style={{ display: "inline-block", fontSize: "0.62rem", fontWeight: 800, color: "#92400e", background: "#fef3c7", padding: "0.05rem 0.35rem", borderRadius: "3px", marginTop: "2px" }}>
+                          🎯 Faixa do Milhão
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Advogado / OAB */}
+                    <td style={{ padding: "8px 12px" }}>
+                      <div style={{ fontWeight: 600, color: "#334155", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "200px" }}>
+                        {item.advogadoNome || "Consta nos autos"}
+                      </div>
+                      <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "2px" }}>
+                        {item.advogadoOab ? `OAB ${item.advogadoOab}` : "TJSP e-SAJ"}
+                      </div>
+                    </td>
+
+                    {/* Auditoria */}
+                    <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                      <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#15803d", background: "#dcfce7", padding: "0.15rem 0.45rem", borderRadius: "999px" }}>
+                        ✓ LIVRE
+                      </span>
+                    </td>
+
+                    {/* Ações */}
+                    <td style={{ padding: "8px 12px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
+                        <button
+                          onClick={() => copyCanonicalWhatsApp(item)}
+                          style={{
+                            padding: "0.3rem 0.5rem",
+                            borderRadius: "5px",
+                            border: "1px solid #bbf7d0",
+                            background: copyFeedback === item.id ? "#15803d" : "#f0fdf4",
+                            color: copyFeedback === item.id ? "#ffffff" : "#166534",
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.2rem",
+                          }}
+                          title="Copiar Resumo WhatsApp"
+                        >
+                          {copyFeedback === item.id ? <Check size={11} /> : <Copy size={11} />}
+                          Whats
+                        </button>
+
+                        <button
+                          onClick={() => printDossier(item)}
+                          style={{
+                            padding: "0.3rem 0.45rem",
+                            borderRadius: "5px",
+                            border: "1px solid #cbd5e1",
+                            background: "#ffffff",
+                            color: "#334155",
+                            cursor: "pointer",
+                          }}
+                          title="Gerar Dossiê PDF"
+                        >
+                          <Printer size={12} />
+                        </button>
+
+                        <a
+                          href={item.oficio1Url || item.oficio2Url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: "0.3rem 0.45rem",
+                            borderRadius: "5px",
+                            border: "1px solid #cbd5e1",
+                            background: "#ffffff",
+                            color: "#0369a1",
+                            display: "inline-flex",
+                          }}
+                          title="Abrir no TJSP (e-SAJ)"
+                        >
+                          <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* ── PAGINAÇÃO COMPACTA ─────────────────────────────────────────── */}
+      {/* ── PAGINAÇÃO ─────────────────────────────────────────────────── */}
       {!loading && !error && filteredCount > pageSize && (
         <div style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginTop: "0.85rem",
-          padding: "0.5rem 0",
-          fontSize: "0.82rem",
+          marginTop: "0.75rem",
+          padding: "0.4rem 0",
+          fontSize: "0.78rem",
           color: "#64748b",
+          flexWrap: "wrap",
+          gap: "0.5rem",
         }}>
           <div>
-            Exibindo <strong>{(page - 1) * pageSize + 1}</strong> a <strong>{Math.min(page * pageSize, filteredCount)}</strong> de <strong>{filteredCount.toLocaleString("pt-BR")}</strong> precatórios
+            <strong>{(page - 1) * pageSize + 1}</strong>–<strong>{Math.min(page * pageSize, filteredCount)}</strong> de <strong>{filteredCount.toLocaleString("pt-BR")}</strong>
           </div>
 
-          <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.35rem", alignItems: "center" }}>
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
               style={{
-                padding: "0.4rem 0.8rem",
-                borderRadius: "6px",
+                padding: "0.35rem 0.7rem",
+                borderRadius: "5px",
                 border: "1px solid #cbd5e1",
                 background: "#ffffff",
                 cursor: page === 1 ? "not-allowed" : "pointer",
                 opacity: page === 1 ? 0.4 : 1,
-                fontSize: "0.8rem",
+                fontSize: "0.75rem",
                 fontWeight: 600,
               }}
             >
               ← Anterior
             </button>
 
-            <span style={{ padding: "0.4rem 0.7rem", fontWeight: 700, color: "#071d30" }}>
-              Página {page} de {Math.ceil(filteredCount / pageSize)}
+            <span style={{ padding: "0.35rem 0.5rem", fontWeight: 700, color: "#071d30" }}>
+              {page} / {Math.ceil(filteredCount / pageSize)}
             </span>
 
             <button
               onClick={() => setPage(p => p + 1)}
               disabled={page >= Math.ceil(filteredCount / pageSize)}
               style={{
-                padding: "0.4rem 0.8rem",
-                borderRadius: "6px",
+                padding: "0.35rem 0.7rem",
+                borderRadius: "5px",
                 border: "1px solid #cbd5e1",
                 background: "#ffffff",
                 cursor: page >= Math.ceil(filteredCount / pageSize) ? "not-allowed" : "pointer",
                 opacity: page >= Math.ceil(filteredCount / pageSize) ? 0.4 : 1,
-                fontSize: "0.8rem",
+                fontSize: "0.75rem",
                 fontWeight: 600,
               }}
             >
@@ -1178,7 +1039,7 @@ export default function Pilot907Panel() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              width: "min(640px, 100vw)",
+              width: "min(600px, 100vw)",
               height: "100vh",
               background: "#ffffff",
               boxShadow: "-8px 0 32px rgba(0,0,0,0.15)",
@@ -1189,19 +1050,19 @@ export default function Pilot907Panel() {
           >
             {/* Header da Gaveta */}
             <div style={{
-              padding: "1.25rem 1.5rem",
+              padding: "1rem 1.25rem",
               borderBottom: "1px solid #e2e8f0",
               background: "#f8fafc",
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.75rem" }}>
                 <div>
-                  <div style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#b45309" }}>
-                    Detalhes da Oportunidade · Mesa de Operações
+                  <div style={{ fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", color: "#b45309" }}>
+                    Detalhes da Oportunidade
                   </div>
-                  <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#071d30", margin: "0.25rem 0 0.15rem" }}>
+                  <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#071d30", margin: "0.2rem 0" }}>
                     {cleanTitular(dossier.titular, dossier.natureza)}
                   </h2>
-                  <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                  <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
                     DEPRE: <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0369a1" }}>{dossier.depre}</span>
                   </div>
                 </div>
@@ -1212,20 +1073,20 @@ export default function Pilot907Panel() {
                     background: "none",
                     border: "1px solid #cbd5e1",
                     borderRadius: "6px",
-                    padding: "0.35rem",
+                    padding: "0.3rem",
                     cursor: "pointer",
                     color: "#64748b",
                     display: "flex",
                   }}
                 >
-                  <X size={16} />
+                  <X size={15} />
                 </button>
               </div>
 
               {/* Banner de Valor */}
               <div style={{
-                marginTop: "1rem",
-                padding: "0.85rem 1rem",
+                marginTop: "0.75rem",
+                padding: "0.75rem 0.9rem",
                 borderRadius: "8px",
                 background: "linear-gradient(135deg, #071d30 0%, #173854 100%)",
                 color: "#ffffff",
@@ -1234,43 +1095,44 @@ export default function Pilot907Panel() {
                 alignItems: "center",
               }}>
                 <div>
-                  <div style={{ fontSize: "0.7rem", color: "#cbd5e1", textTransform: "uppercase", fontWeight: 700 }}>
-                    Valor de Face Nominal
+                  <div style={{ fontSize: "0.68rem", color: "#cbd5e1", textTransform: "uppercase", fontWeight: 700 }}>
+                    Valor de Face
                   </div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fef08a", letterSpacing: "-0.02em" }}>
+                  <div style={{ fontSize: "1.35rem", fontWeight: 800, color: "#fef08a" }}>
                     {money(dossier.valor)}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <span style={{ background: "#dcfce7", color: "#15803d", padding: "0.25rem 0.6rem", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 700 }}>
-                    ✓ LIVRE (Sem Cessão)
+                  <span style={{ background: "#dcfce7", color: "#15803d", padding: "0.2rem 0.5rem", borderRadius: "20px", fontSize: "0.7rem", fontWeight: 700 }}>
+                    ✓ LIVRE
                   </span>
-                  <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.25rem" }}>
+                  <div style={{ fontSize: "0.68rem", color: "#94a3b8", marginTop: "0.2rem" }}>
                     Orçamento {dossier.budgetYear || 2025}
                   </div>
                 </div>
               </div>
 
-              {/* Abas da gaveta */}
-              <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+              {/* Abas */}
+              <div style={{ display: "flex", gap: "0.35rem", marginTop: "0.75rem", overflowX: "auto" }}>
                 {[
-                  { id: "resumo", label: "📋 Resumo Dossiê" },
-                  { id: "simulacao", label: "💰 Simulador de Aquisição" },
-                  { id: "crm", label: "🤝 CRM & Notas" },
+                  { id: "resumo", label: "📋 Resumo" },
+                  { id: "simulacao", label: "💰 Simulador" },
+                  { id: "crm", label: "🤝 CRM" },
                   { id: "oficio", label: "⚖️ Autos TJSP" },
                 ].map(t => (
                   <button
                     key={t.id}
                     onClick={() => setDrawerTab(t.id as any)}
                     style={{
-                      padding: "0.45rem 0.85rem",
-                      borderRadius: "6px",
+                      padding: "0.35rem 0.7rem",
+                      borderRadius: "5px",
                       border: "none",
                       background: drawerTab === t.id ? "#071d30" : "#ffffff",
                       color: drawerTab === t.id ? "#ffffff" : "#64748b",
-                      fontSize: "0.78rem",
+                      fontSize: "0.75rem",
                       fontWeight: 700,
                       cursor: "pointer",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {t.label}
@@ -1280,46 +1142,40 @@ export default function Pilot907Panel() {
             </div>
 
             {/* Conteúdo com rolagem */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem 1.5rem" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.25rem" }}>
               {drawerTab === "resumo" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                  {/* Seção 1: Credor e Devedor */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                   <div>
-                    <div style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", color: "#64748b", marginBottom: "0.5rem" }}>
-                      1. Identificação do Credor
+                    <div style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase", color: "#64748b", marginBottom: "0.4rem" }}>
+                      1. Credor e Ente Devedor
                     </div>
-                    <div style={{ background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", padding: "0.85rem 1rem", display: "grid", gap: "0.5rem" }}>
+                    <div style={{ background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0", padding: "0.75rem 0.85rem", display: "grid", gap: "0.4rem" }}>
                       <DrawerField label="Nome do Titular" value={cleanTitular(dossier.titular, dossier.natureza)} bold />
-                      <DrawerField label="Tipo de Titular" value="Pessoa Física (Alimentar)" />
                       <DrawerField label="Ente Devedor" value={dossier.devedor || `Município de ${dossier.municipio}`} />
                       <DrawerField label="Município / Foro" value={`${dossier.municipio} / SP`} />
                       <DrawerField label="Natureza" value={dossier.natureza || "Alimentar"} />
                     </div>
                   </div>
 
-                  {/* Seção 2: Dados Judiciais */}
                   <div>
-                    <div style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", color: "#64748b", marginBottom: "0.5rem" }}>
-                      2. Identificação Processual & Requisitório
+                    <div style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase", color: "#64748b", marginBottom: "0.4rem" }}>
+                      2. Identificação Processual
                     </div>
-                    <div style={{ background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", padding: "0.85rem 1rem", display: "grid", gap: "0.5rem" }}>
-                      <DrawerField label="Processo DEPRE" value={dossier.depre} mono />
-                      <DrawerField label="Processo de Origem" value={dossier.processoOrigem || "Verificar nos autos do TJSP"} mono />
+                    <div style={{ background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0", padding: "0.75rem 0.85rem", display: "grid", gap: "0.4rem" }}>
+                      <DrawerField label="DEPRE" value={dossier.depre} mono />
+                      <DrawerField label="Processo Origem" value={dossier.processoOrigem || "Verificar autos"} mono />
                       <DrawerField label="Vara Judicial" value={dossier.vara || "Vara da Fazenda Pública"} />
-                      <DrawerField label="Fila Cronológica" value={dossier.statusFila || "Autuado em 2024 · Orçamento 2025 pendente"} />
-                      <DrawerField label="Status de Cessão" value="✓ LIVRE (Sem Cessão Registrada)" color="#15803d" bold />
+                      <DrawerField label="Fila Cronológica" value={dossier.statusFila || "Orçamento 2025 pendente"} />
                     </div>
                   </div>
 
-                  {/* Seção 3: Representação Legal */}
                   <div>
-                    <div style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", color: "#64748b", marginBottom: "0.5rem" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 800, textTransform: "uppercase", color: "#64748b", marginBottom: "0.4rem" }}>
                       3. Advogado Habilitado
                     </div>
-                    <div style={{ background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", padding: "0.85rem 1rem", display: "grid", gap: "0.5rem" }}>
-                      <DrawerField label="Nome do Advogado" value={dossier.advogadoNome || "Consta nos autos"} bold />
-                      <DrawerField label="Inscrição OAB" value={dossier.advogadoOab || "OAB a consultar nos autos"} mono />
-                      <DrawerField label="Honorários Contratuais" value={dossier.honorarios || "15% a 20% (estimativa de praxe)"} />
+                    <div style={{ background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0", padding: "0.75rem 0.85rem", display: "grid", gap: "0.4rem" }}>
+                      <DrawerField label="Advogado" value={dossier.advogadoNome || "Consta nos autos"} bold />
+                      <DrawerField label="OAB" value={dossier.advogadoOab || "Consultar nos autos"} mono />
                     </div>
                   </div>
                 </div>
@@ -1327,16 +1183,11 @@ export default function Pilot907Panel() {
 
               {drawerTab === "simulacao" && (
                 <div>
-                  <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: "1rem" }}>
-                    Ajuste o deságio da proposta e o horizonte estimado de pagamento para calcular o retorno projetado.
-                  </div>
-
-                  {/* Controles de Slider */}
-                  <div style={{ background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", padding: "1.1rem", marginBottom: "1.25rem" }}>
-                    <div style={{ marginBottom: "1.25rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>Deságio Proposto</span>
-                        <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#b45309" }}>{100 - desconto}%</span>
+                  <div style={{ background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0", padding: "0.85rem", marginBottom: "1rem" }}>
+                    <div style={{ marginBottom: "1rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155" }}>Deságio</span>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#b45309" }}>{100 - desconto}%</span>
                       </div>
                       <input
                         type="range"
@@ -1346,16 +1197,12 @@ export default function Pilot907Panel() {
                         onChange={e => setDesconto(Number(e.target.value))}
                         style={{ width: "100%", accentColor: "#b45309" }}
                       />
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#94a3b8" }}>
-                        <span>10% deságio (conservador)</span>
-                        <span>50% deságio (agressivo)</span>
-                      </div>
                     </div>
 
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>Prazo Estimado de Recebimento</span>
-                        <span style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0369a1" }}>{meses} meses</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155" }}>Prazo Estimado</span>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0369a1" }}>{meses} meses</span>
                       </div>
                       <input
                         type="range"
@@ -1365,38 +1212,18 @@ export default function Pilot907Panel() {
                         onChange={e => setMeses(Number(e.target.value))}
                         style={{ width: "100%", accentColor: "#0369a1" }}
                       />
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#94a3b8" }}>
-                        <span>6 meses</span>
-                        <span>60 meses</span>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Resultados do simulador */}
                   {simulador && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                      <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "1rem" }}>
-                        <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#166534" }}>Preço de Aquisição</div>
-                        <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#15803d", marginTop: "0.25rem" }}>{money(simulador.aquisicao)}</div>
-                        <div style={{ fontSize: "0.7rem", color: "#166534" }}>{desconto}% do valor de face</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+                      <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "6px", padding: "0.75rem" }}>
+                        <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#166534" }}>Aquisição</div>
+                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#15803d" }}>{money(simulador.aquisicao)}</div>
                       </div>
-
-                      <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "1rem" }}>
-                        <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#1e40af" }}>Lucro Bruto Projetado</div>
-                        <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#1d4ed8", marginTop: "0.25rem" }}>{money(simulador.lucro)}</div>
-                        <div style={{ fontSize: "0.7rem", color: "#1e40af" }}>Diferença de face</div>
-                      </div>
-
-                      <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: "8px", padding: "1rem" }}>
-                        <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#92400e" }}>Rentabilidade Bruta</div>
-                        <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#b45309", marginTop: "0.25rem" }}>+{simulador.rentab.toFixed(1)}%</div>
-                        <div style={{ fontSize: "0.7rem", color: "#92400e" }}>Sobre capital investido</div>
-                      </div>
-
-                      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "1rem" }}>
-                        <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#475569" }}>Taxa Anualizada (TIR)</div>
-                        <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0f172a", marginTop: "0.25rem" }}>{simulador.tirAnual.toFixed(1)}% a.a.</div>
-                        <div style={{ fontSize: "0.7rem", color: "#64748b" }}>Em {meses} meses</div>
+                      <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "6px", padding: "0.75rem" }}>
+                        <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "#1e40af" }}>Lucro Bruto</div>
+                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1d4ed8" }}>{money(simulador.lucro)}</div>
                       </div>
                     </div>
                   )}
@@ -1404,15 +1231,15 @@ export default function Pilot907Panel() {
               )}
 
               {drawerTab === "crm" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   <div>
-                    <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "0.35rem" }}>
-                      Etapa Comercial no Pipeline
+                    <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "0.3rem" }}>
+                      Status do Pipeline
                     </label>
                     <select
                       value={crmStatus[dossier.id] ?? "NOVO"}
                       onChange={e => setCrmStatus(s => ({ ...s, [dossier.id]: e.target.value as CrmStatus }))}
-                      style={{ width: "100%", padding: "0.6rem 0.75rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.85rem", background: "#ffffff" }}
+                      style={{ width: "100%", padding: "0.5rem 0.65rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", background: "#ffffff" }}
                     >
                       {(Object.keys(CRM) as CrmStatus[]).map(s => (
                         <option key={s} value={s}>{CRM[s].label}</option>
@@ -1421,26 +1248,22 @@ export default function Pilot907Panel() {
                   </div>
 
                   <div>
-                    <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "0.35rem" }}>
-                      Notas e Registro de Contato
+                    <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155", display: "block", marginBottom: "0.3rem" }}>
+                      Notas
                     </label>
                     <textarea
-                      rows={5}
+                      rows={4}
                       value={notes[dossier.id] ?? ""}
                       onChange={e => setNotes(n => ({ ...n, [dossier.id]: e.target.value }))}
-                      placeholder="Registrar conversa com credor ou advogado, valor ofertado, objeções ou retorno agendado..."
-                      style={{ width: "100%", padding: "0.65rem 0.75rem", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "0.82rem", boxSizing: "border-box" }}
+                      placeholder="Registrar retorno de contato..."
+                      style={{ width: "100%", padding: "0.55rem 0.65rem", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.8rem", boxSizing: "border-box" }}
                     />
                   </div>
                 </div>
               )}
 
               {drawerTab === "oficio" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  <div style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                    Acesso direto às páginas de consulta pública do Tribunal de Justiça de São Paulo (TJSP).
-                  </div>
-
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   <a
                     href={dossier.oficio1Url}
                     target="_blank"
@@ -1449,18 +1272,18 @@ export default function Pilot907Panel() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "0.85rem 1rem",
-                      borderRadius: "8px",
+                      padding: "0.75rem 0.85rem",
+                      borderRadius: "6px",
                       border: "1px solid #cbd5e1",
                       background: "#f8fafc",
                       textDecoration: "none",
                       color: "#071d30",
                       fontWeight: 600,
-                      fontSize: "0.85rem",
+                      fontSize: "0.82rem",
                     }}
                   >
-                    <span>📎 Consultar Ofício DEPRE no e-SAJ (2º Grau)</span>
-                    <ExternalLink size={15} color="#0369a1" />
+                    <span>📎 Consultar DEPRE no e-SAJ (2º Grau)</span>
+                    <ExternalLink size={14} color="#0369a1" />
                   </a>
 
                   {dossier.oficio2Url && (
@@ -1472,32 +1295,31 @@ export default function Pilot907Panel() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        padding: "0.85rem 1rem",
-                        borderRadius: "8px",
+                        padding: "0.75rem 0.85rem",
+                        borderRadius: "6px",
                         border: "1px solid #cbd5e1",
                         background: "#f8fafc",
                         textDecoration: "none",
                         color: "#071d30",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "0.82rem",
                       }}
                     >
-                      <span>📎 Consultar Processo Originário no TJSP (1º Grau)</span>
-                      <ExternalLink size={15} color="#0369a1" />
+                      <span>📎 Consultar Origem no TJSP (1º Grau)</span>
+                      <ExternalLink size={14} color="#0369a1" />
                     </a>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Rodapé Fixo da Gaveta */}
+            {/* Rodapé Fixo */}
             <div style={{
-              padding: "1rem 1.5rem",
+              padding: "0.75rem 1.25rem",
               borderTop: "1px solid #e2e8f0",
               background: "#ffffff",
               display: "flex",
-              gap: "0.6rem",
-              flexWrap: "wrap",
+              gap: "0.5rem",
             }}>
               <button
                 onClick={() => copyCanonicalWhatsApp(dossier)}
@@ -1506,19 +1328,19 @@ export default function Pilot907Panel() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "0.4rem",
-                  padding: "0.65rem 1rem",
-                  borderRadius: "8px",
+                  gap: "0.35rem",
+                  padding: "0.55rem 0.85rem",
+                  borderRadius: "6px",
                   border: "none",
                   background: copyFeedback === dossier.id ? "#15803d" : "#16a34a",
                   color: "#ffffff",
-                  fontSize: "0.85rem",
+                  fontSize: "0.8rem",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
-                {copyFeedback === dossier.id ? <Check size={16} /> : <Share2 size={16} />}
-                {copyFeedback === dossier.id ? "Copiado!" : "Copiar WhatsApp (Padrão Oficial)"}
+                {copyFeedback === dossier.id ? <Check size={14} /> : <Share2 size={14} />}
+                {copyFeedback === dossier.id ? "Copiado!" : "Copiar WhatsApp Oficial"}
               </button>
 
               <button
@@ -1527,26 +1349,25 @@ export default function Pilot907Panel() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "0.4rem",
-                  padding: "0.65rem 1rem",
-                  borderRadius: "8px",
+                  gap: "0.35rem",
+                  padding: "0.55rem 0.85rem",
+                  borderRadius: "6px",
                   border: "1px solid #071d30",
                   background: "#071d30",
                   color: "#ffffff",
-                  fontSize: "0.85rem",
+                  fontSize: "0.8rem",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
               >
-                <Printer size={16} />
-                Gerar PDF
+                <Printer size={14} />
+                PDF
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Style spin */}
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -1555,9 +1376,9 @@ export default function Pilot907Panel() {
 function DrawerField({ label, value, mono, bold, color }: { label: string; value: string; mono?: boolean; bold?: boolean; color?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5rem" }}>
-      <span style={{ fontSize: "0.78rem", color: "#64748b", flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: "0.75rem", color: "#64748b", flexShrink: 0 }}>{label}</span>
       <span style={{
-        fontSize: "0.82rem",
+        fontSize: "0.78rem",
         color: color || "#071d30",
         fontWeight: bold ? 700 : 500,
         fontFamily: mono ? "monospace" : "inherit",
