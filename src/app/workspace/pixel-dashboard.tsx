@@ -57,24 +57,18 @@ export default function PixelDashboard({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div
+          <img
+            src="/brand/central-precatorios-symbol.jpg"
+            alt="Central Precatórios"
             style={{
               width: "36px",
               height: "36px",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #0B1F33 0%, #173854 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              objectFit: "cover",
               border: "1.5px solid #E8AA42",
-              boxShadow: "0 2px 6px rgba(232, 170, 66, 0.2)",
-              color: "#E8AA42",
-              fontWeight: 800,
-              fontSize: "0.85rem",
+              boxShadow: "0 2px 6px rgba(232, 170, 66, 0.25)",
             }}
-          >
-            CP
-          </div>
+          />
           <div>
             <h1
               style={{

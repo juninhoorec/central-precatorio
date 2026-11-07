@@ -1795,29 +1795,25 @@ export default function OperationsClient() {
     <main className={styles.app}>
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 38,
-              height: 38,
-              borderRadius: "8px",
-              background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
-              color: "#ffffff",
-              fontWeight: 900,
-              fontSize: "1.1rem",
-              letterSpacing: "-0.05em",
-              boxShadow: "0 2px 8px rgba(180,83,9,0.3)"
-            }}>
-              CP
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <img
+              src="/brand/central-precatorios-symbol.jpg"
+              alt="Central Precatórios"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "10px",
+                objectFit: "cover",
+                boxShadow: "0 2px 8px rgba(232, 170, 66, 0.25)",
+                border: "1.5px solid rgba(232, 170, 66, 0.4)",
+              }}
+            />
             <div>
-              <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
+              <div style={{ fontSize: "0.96rem", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
                 Central Precatórios
               </div>
-              <div style={{ fontSize: "0.68rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Mesa Operacional
+              <div style={{ fontSize: "0.64rem", color: "#E8AA42", fontWeight: 700, letterSpacing: "0.04em" }}>
+                Inteligência para aquisição
               </div>
             </div>
           </div>
