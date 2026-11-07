@@ -14,6 +14,10 @@ import {
   FlaskConical,
   Trash2,
   ShieldCheck,
+  LayoutDashboard,
+  ListFilter,
+  Briefcase,
+  Settings,
 } from "lucide-react";
 import styles from "./operations.module.css";
 import Documents from "./documents";
@@ -1559,7 +1563,7 @@ export default function OperationsClient() {
     [tab, setTab] = useState(tabs[0]),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState(""),
-    [view, setView] = useState("Fila DEPRE (907)"),
+    [view, setView] = useState("Fila DEPRE (26.8k)"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(true),
@@ -1744,7 +1748,7 @@ export default function OperationsClient() {
   const overdue = tasks.filter(
     (t) => !t.done && t.due && t.due < new Date().toISOString().slice(0, 10),
   );
-  const isFilaView = view === "Fila DEPRE (907)";
+  const isFilaView = view === "Fila DEPRE (26.8k)" || view === "Fila DEPRE (907)";
   function exportCsv() {
     const cell = (v: unknown) =>
       '"' +
@@ -1781,35 +1785,127 @@ export default function OperationsClient() {
   return (
     <main className={styles.app}>
       <aside className={styles.sidebar}>
-        <Link href="/">
-          <ArrowLeft size={16} /> Central Precatórios
-        </Link>
         <div className={styles.brand}>
-          CP<span>CENTRAL OPERACIONAL</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 38,
+              height: 38,
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+              color: "#ffffff",
+              fontWeight: 900,
+              fontSize: "1.1rem",
+              letterSpacing: "-0.05em",
+              boxShadow: "0 2px 8px rgba(180,83,9,0.3)"
+            }}>
+              CP
+            </span>
+            <div>
+              <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
+                Central Precatórios
+              </div>
+              <div style={{ fontSize: "0.68rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Mesa Operacional
+              </div>
+            </div>
+          </div>
         </div>
-        <nav>
+        <nav style={{ display: "grid", gap: "0.35rem", marginTop: "0.5rem" }}>
           {[
-            "Fila DEPRE (907)",
-            "Captação Autônoma",
-            "Captação",
-            "Operações",
-            "Pipeline",
-            "Agenda",
-            "Relatórios",
-            "Controle operacional",
-            "Integrações",
-          ].map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              aria-current={view === v ? "page" : undefined}
-            >
-              {v}
-            </button>
-          ))}
+            { id: "Fila DEPRE (26.8k)", label: "Fila DEPRE", badge: "26.8k", icon: ListFilter },
+            { id: "Dashboard", label: "Dashboard / Início", icon: LayoutDashboard },
+            { id: "Operações & CRM", label: "Operações & CRM", icon: Briefcase },
+            { id: "Configurações", label: "Configurações", icon: Settings },
+          ].map((item) => {
+            const active = view === item.id || (item.id === "Fila DEPRE (26.8k)" && isFilaView);
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setView(item.id)}
+                aria-current={active ? "page" : undefined}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.6rem",
+                  padding: "0.65rem 0.85rem",
+                  borderRadius: "8px",
+                  border: active ? "1px solid rgba(217, 119, 6, 0.4)" : "1px solid transparent",
+                  background: active ? "rgba(217, 119, 6, 0.12)" : "transparent",
+                  color: active ? "#fbbf24" : "#cbd5e1",
+                  fontSize: "0.84rem",
+                  fontWeight: active ? 700 : 500,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <Icon size={16} color={active ? "#fbbf24" : "#94a3b8"} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 800,
+                    padding: "0.1rem 0.45rem",
+                    borderRadius: "999px",
+                    background: active ? "#b45309" : "rgba(255,255,255,0.12)",
+                    color: "#ffffff",
+                  }}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
-        <p>Área autenticada e isolada por organização.</p>
-        <Link href="/conta">Conta e organização</Link>
+
+        {/* Rodapé do Perfil no Sidebar */}
+        <div style={{
+          marginTop: "auto",
+          paddingTop: "1rem",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: "#1e3a8a",
+              border: "1.5px solid #3b82f6",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.8rem",
+              fontWeight: 800,
+              flexShrink: 0,
+            }}>
+              CP
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                Auditoria CP
+              </div>
+              <div style={{ fontSize: "0.68rem", color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                Conta Principal · Verificado
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem", fontSize: "0.72rem" }}>
+            <Link href="/conta" style={{ color: "#cbd5e1", textDecoration: "none" }}>
+              Conta e Organização
+            </Link>
+            <Link href="/" style={{ color: "#f87171", textDecoration: "none" }}>
+              Sair
+            </Link>
+          </div>
+        </div>
       </aside>
       <section className={styles.main}>
         {!isFilaView && <div className={styles.heading}>
@@ -1877,8 +1973,8 @@ export default function OperationsClient() {
             <strong>{dashboardItems.reduce((s, o) => s + o.workflow.negotiations.length, 0)}</strong>
           </article>
         </div>}
-        {view === "Fila DEPRE (907)" ? (
-          <section className={styles.card}>
+        {isFilaView ? (
+          <section className={styles.card} style={{ padding: "1.25rem 1.5rem", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
             <Pilot907Panel />
           </section>
         ) : view === "Captação Autônoma" ? (

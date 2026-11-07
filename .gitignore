@@ -57,6 +57,7 @@ next-env.d.ts
 /outputs/
 /evidence/
 /data/*.json
+!/data/queue-safra-26k.json
 /data/*.jsonl
 /data/*.csv
 /data/*.zip
