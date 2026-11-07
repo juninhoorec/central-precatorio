@@ -1926,7 +1926,7 @@ export default function OperationsClient() {
         </div>
       </aside>
       <section className={styles.main}>
-        {(!isFilaView && view !== "Dashboard") && <div className={styles.heading}>
+        {(!isFilaView && view !== "Dashboard" && view !== "Pipeline" && view !== "Integrações" && view !== "Relatórios" && view !== "Suporte") && <div className={styles.heading}>
           <div>
             <small>UMA OPORTUNIDADE · UM HISTÓRICO · UM PRÓXIMO PASSO</small>
             <h1>{view}</h1>
@@ -1968,12 +1968,12 @@ export default function OperationsClient() {
             {message}
           </p>
         )}
-        {(!isFilaView && view !== "Dashboard") && <div className={styles.metricScope}>
+        {(!isFilaView && view !== "Dashboard" && view !== "Pipeline" && view !== "Integrações" && view !== "Relatórios" && view !== "Suporte") && <div className={styles.metricScope}>
           {demoMode
             ? "DADOS DE DEMONSTRAÇÃO — totais abaixo consideram somente registros sintéticos."
             : "MÉTRICAS DE PRODUÇÃO — registros de demonstração excluídos."}
         </div>}
-        {(!isFilaView && view !== "Dashboard") && <div className={styles.metrics}>
+        {(!isFilaView && view !== "Dashboard" && view !== "Pipeline" && view !== "Integrações" && view !== "Relatórios" && view !== "Suporte") && <div className={styles.metrics}>
           <article>
             <small>{demoMode ? "Operações demonstrativas" : "Operações de produção"}</small>
             <strong>{dashboardItems.length}</strong>
